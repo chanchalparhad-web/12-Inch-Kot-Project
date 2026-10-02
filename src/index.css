@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-zinc-950 text-zinc-100 antialiased font-sans selection:bg-yellow-500 selection:text-black;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+}
+
+/* Custom Scrollbar Utilities */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #09090b;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 9999px;
+}
