@@ -14,6 +14,7 @@ import { PrinterView } from './components/PrinterView';
 import { BusinessSetupModal } from './components/BusinessSetupModal';
 import { ThermalReceiptModal } from './components/ThermalReceiptModal';
 import { BillProStore } from './services/storage';
+import { BillProApi } from './services/api';
 import type {
   Business,
   User,
@@ -31,6 +32,7 @@ import { LogIn } from 'lucide-react';
 export function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<NavTab>('home');
+  const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
 
   // Domain States loaded from local persistence
   const [business, setBusiness] = useState<Business>(BillProStore.getBusiness());
@@ -44,6 +46,33 @@ export function App() {
   const [transactions, setTransactions] = useState<InventoryTransaction[]>(
     BillProStore.getTransactions()
   );
+
+  // Sync with Spring Boot REST API & PostgreSQL DB on Mount
+  useEffect(() => {
+    async function syncBackendData() {
+      const healthy = await BillProApi.checkBackendHealth();
+      setIsBackendConnected(healthy);
+      if (healthy) {
+        try {
+          const [prods, cats, custs, exps] = await Promise.all([
+            BillProApi.getProducts(),
+            BillProApi.getCategories(),
+            BillProApi.getCustomers(),
+            BillProApi.getExpenses(),
+          ]);
+          if (prods.length > 0) setProducts(prods);
+          if (cats.length > 0) setCategories(cats);
+          if (custs.length > 0) setCustomers(custs);
+          if (exps.length > 0) setExpenses(exps);
+        } catch (e) {
+          console.warn('Sync with PostgreSQL backend failed', e);
+        }
+      }
+    }
+    syncBackendData();
+    const interval = setInterval(syncBackendData, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Modals State
   const [showBusinessSetup, setShowBusinessSetup] = useState(false);
@@ -297,6 +326,7 @@ export function App() {
         business={business}
         user={user}
         printer={printer}
+        isBackendConnected={isBackendConnected}
         onOpenPrinter={() => setActiveTab('printer')}
         onOpenBusinessSetup={() => setShowBusinessSetup(true)}
         onLogout={() => setIsAuthenticated(false)}

@@ -1,11 +1,12 @@
 import React from 'react';
 import type { Business, PrinterDevice, User } from '../types/billpro';
-import { Printer, LogOut, Settings } from 'lucide-react';
+import { Printer, LogOut, Settings, Database } from 'lucide-react';
 
 interface HeaderProps {
   business: Business;
   user: User;
   printer: PrinterDevice;
+  isBackendConnected?: boolean;
   onOpenPrinter: () => void;
   onOpenBusinessSetup: () => void;
   onLogout: () => void;
@@ -15,6 +16,7 @@ export const Header: React.FC<HeaderProps> = ({
   business,
   user,
   printer,
+  isBackendConnected = true,
   onOpenPrinter,
   onOpenBusinessSetup,
   onLogout,
@@ -59,6 +61,26 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Header Actions */}
         <div className="flex items-center gap-2">
+          {/* Backend PostgreSQL Connection Status Badge */}
+          <div
+            className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border ${
+              isBackendConnected
+                ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                : 'bg-zinc-800 text-zinc-500 border-zinc-700'
+            }`}
+            title={isBackendConnected ? 'PostgreSQL & Spring Boot Connected' : 'Local Storage Mode'}
+          >
+            <Database className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">
+              {isBackendConnected ? 'PostgreSQL Active' : 'Offline Mode'}
+            </span>
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isBackendConnected ? 'bg-blue-400 animate-pulse' : 'bg-zinc-500'
+              }`}
+            />
+          </div>
+
           {/* Printer Connection Badge */}
           <button
             onClick={onOpenPrinter}
