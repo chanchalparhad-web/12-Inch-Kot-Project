@@ -1,64 +1,73 @@
--- SEED DATA FOR BILLPRO DEMO
--- Business Setup: Rahul Traders
+-- SEED DATA FOR 12 INCH FRIES - BILLPRO POS
+-- Business Setup: 12 Inch Fries
 
 INSERT INTO businesses (id, name, owner_name, mobile, email, address, city, state, pincode, gst_enabled, gstin, invoice_prefix)
-VALUES (1, 'Rahul Traders', 'Rahul Sharma', '9876543210', 'rahul@rahultraders.com', 'Shop No. 12, Main Market, MG Road', 'Pune', 'Maharashtra', '411001', TRUE, '27AABCU9603R1ZM', 'INV');
+VALUES (1, '12 Inch Fries', 'Ganesh Shinde', '9876543210', 'contact@the12inchfries.com', 'Kharadi', 'Pune', 'Maharashtra', '411014', TRUE, '27AABCU9603R1ZM', 'INF')
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, owner_name = EXCLUDED.owner_name, address = EXCLUDED.address, city = EXCLUDED.city;
 
 INSERT INTO users (id, name, email, mobile, password, role, business_id)
-VALUES (1, 'Rahul Sharma', 'rahul@rahultraders.com', '9876543210', '$2a$10$e8w8S5...hashed_password', 'OWNER', 1);
+VALUES (1, 'Ganesh Shinde', 'ganesh@the12inchfries.com', '9876543210', '$2a$10$e8w8S5...hashed_password', 'OWNER', 1)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
 
+-- CATEGORIES
 INSERT INTO categories (id, business_id, name) VALUES
-(1, 1, 'Fast Food'),
-(2, 1, 'Beverages'),
-(3, 1, 'Snacks'),
-(4, 1, 'Grocery'),
-(5, 1, 'Electronics');
+(1, 1, 'Signature Fries'),
+(2, 1, 'House Special'),
+(3, 1, 'Build Your Own'),
+(4, 1, 'Add-Ons')
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
 
+-- PRODUCTS (12 INCH FRIES MENU)
 INSERT INTO products (id, business_id, category_id, name, sku, barcode, purchase_price, selling_price, gst_percentage, unit, low_stock_threshold, active) VALUES
-(1, 1, 1, 'Veg Supreme Burger', 'FD-BRG-01', '890123456701', 45.00, 80.00, 5.00, 'pcs', 10, TRUE),
-(2, 1, 1, 'Crispy French Fries', 'FD-FRS-01', '890123456702', 30.00, 70.00, 5.00, 'pcs', 15, TRUE),
-(3, 1, 2, 'Cold Coffee 300ml', 'BV-COF-01', '890123456703', 20.00, 60.00, 12.00, 'bot', 8, TRUE),
-(4, 1, 2, 'Fresh Lime Soda', 'BV-LMT-01', '890123456704', 15.00, 40.00, 5.00, 'gls', 12, TRUE),
-(5, 1, 3, 'Masala Cheese Sandwich', 'SNK-SND-01', '890123456705', 40.00, 90.00, 5.00, 'pcs', 5, TRUE),
-(6, 1, 4, 'Basmati Rice 5kg', 'GRC-RCE-05', '890123456706', 380.00, 450.00, 0.00, 'bag', 4, TRUE),
-(7, 1, 5, 'USB C Fast Charger 20W', 'ELC-CHG-20', '890123456707', 250.00, 499.00, 18.00, 'pcs', 3, TRUE);
+(1, 1, 1, 'The Original 12', 'SF-01', '12F-001', 40.00, 99.00, 5.00, 'pcs', 10, TRUE),
+(2, 1, 1, 'Smoky Storm', 'SF-02', '12F-002', 45.00, 109.00, 5.00, 'pcs', 10, TRUE),
+(3, 1, 1, 'New York Crunch', 'SF-03', '12F-003', 45.00, 109.00, 5.00, 'pcs', 10, TRUE),
+(4, 1, 1, 'BBQ Burner', 'SF-04', '12F-004', 45.00, 109.00, 5.00, 'pcs', 10, TRUE),
+(5, 1, 1, 'Chipotle Kick', 'SF-05', '12F-005', 50.00, 119.00, 5.00, 'pcs', 10, TRUE),
+(6, 1, 1, 'Cheese Blast', 'SF-06', '12F-006', 50.00, 119.00, 5.00, 'pcs', 10, TRUE),
+(7, 1, 1, 'Jalapeño Melt', 'SF-07', '12F-007', 55.00, 129.00, 5.00, 'pcs', 10, TRUE),
+(8, 1, 1, 'Garlic Crush', 'SF-08', '12F-008', 45.00, 109.00, 5.00, 'pcs', 10, TRUE),
+(9, 1, 1, 'Mint Fire', 'SF-09', '12F-009', 45.00, 109.00, 5.00, 'pcs', 10, TRUE),
+(10, 1, 1, 'Smoky Melt', 'SF-10', '12F-010', 55.00, 129.00, 5.00, 'pcs', 10, TRUE),
+(11, 1, 1, 'Chipotle Meltdown', 'SF-11', '12F-011', 55.00, 129.00, 5.00, 'pcs', 10, TRUE),
+(12, 1, 2, '12 Inch Signature', 'HS-12', '12F-012', 65.00, 149.00, 5.00, 'pcs', 10, TRUE),
+(13, 1, 3, 'Build Your Own 12"', 'BYO-13', '12F-013', 50.00, 119.00, 5.00, 'pcs', 10, TRUE),
+(14, 1, 4, 'Jalapeño Add-On', 'AO-14', '12F-014', 8.00, 20.00, 5.00, 'pcs', 10, TRUE),
+(15, 1, 4, 'Extra Cheese Add-On', 'AO-15', '12F-015', 12.00, 30.00, 5.00, 'pcs', 10, TRUE),
+(16, 1, 4, 'Extra Sauce Add-On', 'AO-16', '12F-016', 5.00, 15.00, 5.00, 'pcs', 10, TRUE)
+ON CONFLICT (id) DO UPDATE SET 
+    name = EXCLUDED.name, 
+    selling_price = EXCLUDED.selling_price, 
+    category_id = EXCLUDED.category_id, 
+    active = TRUE;
 
-INSERT INTO inventory (id, product_id, current_stock) VALUES
-(1, 1, 28),
-(2, 2, 45),
-(3, 3, 4), -- Low Stock alert trigger
-(4, 4, 19),
-(5, 5, 2), -- Low stock alert trigger
-(6, 6, 8),
-(7, 7, 0); -- Out of stock alert trigger
+-- -- INVENTORY INITIAL STOCK
+-- INSERT INTO inventory (id, product_id, current_stock) VALUES
+-- (1, 1, 50),
+-- (2, 2, 50),
+-- (3, 3, 50),
+-- (4, 4, 50),
+-- (5, 5, 50),
+-- (6, 6, 50),
+-- (7, 7, 50),
+-- (8, 8, 50),
+-- (9, 9, 50),
+-- (10, 10, 50),
+-- (11, 11, 50),
+-- (12, 12, 50),
+-- (13, 13, 50),
+-- (14, 14, 100),
+-- (15, 15, 100),
+-- (16, 16, 100)
+-- ON CONFLICT (id) DO UPDATE SET current_stock = EXCLUDED.current_stock;
 
-INSERT INTO customers (id, business_id, name, mobile, email, address, gstin) VALUES
-(1, 1, 'Anish Kumar', '9811223344', 'anish@gmail.com', 'Kothrud, Pune', '27BCCP1234F1Z1'),
-(2, 1, 'Priya Patel', '9722334455', 'priya@yahoo.com', 'Deccan, Pune', NULL),
-(3, 1, 'Suresh Mehta', '9933445566', 'suresh@office.com', 'Viman Nagar, Pune', '27AAGCS9988E1Z4');
+-- -- SAMPLE CUSTOMERS
+-- INSERT INTO customers (id, business_id, name, mobile, email, address, gstin) VALUES
+-- (1, 1, 'Anish Kumar', '9811223344', 'anish@gmail.com', 'Kharadi, Pune', '27BCCP1234F1Z1'),
+-- (2, 1, 'Priya Patel', '9722334455', 'priya@yahoo.com', 'Viman Nagar, Pune', NULL)
+-- ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
 
-INSERT INTO sales (id, business_id, customer_id, invoice_number, subtotal, discount, tax, grand_total, payment_status, created_at) VALUES
-(1, 1, 1, 'INV-00040', 230.00, 20.00, 12.50, 222.50, 'PAID', NOW() - INTERVAL '2 hours'),
-(2, 1, 2, 'INV-00041', 150.00, 0.00, 7.50, 157.50, 'PAID', NOW() - INTERVAL '1 hour'),
-(3, 1, NULL, 'INV-00042', 270.00, 20.00, 11.50, 261.50, 'PAID', NOW());
-
-INSERT INTO sale_items (sale_id, product_id, product_name, quantity, unit_price, discount, tax, total) VALUES
-(1, 1, 'Veg Supreme Burger', 2, 80.00, 20.00, 7.00, 147.00),
-(1, 2, 'Crispy French Fries', 1, 70.00, 0.00, 5.50, 75.50),
-(2, 5, 'Masala Cheese Sandwich', 1, 90.00, 0.00, 4.50, 94.50),
-(2, 3, 'Cold Coffee 300ml', 1, 60.00, 0.00, 3.00, 63.00),
-(3, 1, 'Veg Supreme Burger', 2, 80.00, 20.00, 7.00, 147.00),
-(3, 2, 'Crispy French Fries', 1, 70.00, 0.00, 3.50, 73.50),
-(3, 4, 'Fresh Lime Soda', 1, 40.00, 0.00, 1.00, 41.00);
-
-INSERT INTO payments (sale_id, method, amount, status) VALUES
-(1, 'CASH', 222.50, 'COMPLETED'),
-(2, 'CARD', 157.50, 'COMPLETED'),
-(3, 'UPI', 261.50, 'COMPLETED');
-
-INSERT INTO expenses (id, business_id, category, description, amount, payment_method, expense_date, notes) VALUES
-(1, 1, 'Electricity', 'Monthly shop electricity bill', 850.00, 'UPI', CURRENT_DATE, 'MSEB bill paid'),
-(2, 1, 'Transport', 'Stock delivery tempo fare', 400.00, 'CASH', CURRENT_DATE, 'Vegetable supply delivery');
-
+-- PRINTER CONFIG
 INSERT INTO printers (id, business_id, name, address, connection_type, paper_width, status) VALUES
-(1, 1, 'SHREYANS SRS588', '00:11:22:33:44:55', 'BLUETOOTH', 58, 'DISCONNECTED');
+(1, 1, 'SHREYANS SRS588', '00:11:22:33:44:55', 'BLUETOOTH', 58, 'DISCONNECTED')
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;

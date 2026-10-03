@@ -45,16 +45,14 @@ export const BillingView: React.FC<BillingViewProps> = ({
 
   // Cart Operations
   const addToCart = (product: Product) => {
-    if (product.currentStock <= 0) return;
-
     setCart((prevCart) => {
       const existingIndex = prevCart.findIndex((item) => item.product.id === product.id);
       if (existingIndex > -1) {
         const item = prevCart[existingIndex];
-        const newQty = Math.min(item.quantity + 1, product.currentStock);
+        const newQty = item.quantity + 1;
         const updatedCart = [...prevCart];
         const itemTotal = (product.sellingPrice - item.discount) * newQty;
-        const taxAmt = business.gstEnabled ? (itemTotal * product.gstPercentage) / 100 : 0;
+        const taxAmt = business.gstEnabled ? (itemTotal * (product.gstPercentage || 0)) / 100 : 0;
         updatedCart[existingIndex] = {
           ...item,
           quantity: newQty,
@@ -64,7 +62,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
         return updatedCart;
       } else {
         const itemTotal = product.sellingPrice;
-        const taxAmt = business.gstEnabled ? (itemTotal * product.gstPercentage) / 100 : 0;
+        const taxAmt = business.gstEnabled ? (itemTotal * (product.gstPercentage || 0)) / 100 : 0;
         return [
           ...prevCart,
           {
@@ -72,7 +70,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
             quantity: 1,
             unitPrice: product.sellingPrice,
             discount: 0,
-            gstPercentage: product.gstPercentage,
+            gstPercentage: product.gstPercentage || 0,
             taxAmount: taxAmt,
             totalAmount: itemTotal + taxAmt,
           },
@@ -88,12 +86,11 @@ export const BillingView: React.FC<BillingViewProps> = ({
           if (item.product.id === productId) {
             const newQty = item.quantity + delta;
             if (newQty <= 0) return null;
-            const maxQty = Math.min(newQty, item.product.currentStock);
-            const itemTotal = (item.unitPrice - item.discount) * maxQty;
-            const taxAmt = business.gstEnabled ? (itemTotal * item.gstPercentage) / 100 : 0;
+            const itemTotal = (item.unitPrice - item.discount) * newQty;
+            const taxAmt = business.gstEnabled ? (itemTotal * (item.gstPercentage || 0)) / 100 : 0;
             return {
               ...item,
-              quantity: maxQty,
+              quantity: newQty,
               taxAmount: taxAmt,
               totalAmount: itemTotal + taxAmt,
             };
@@ -232,18 +229,14 @@ export const BillingView: React.FC<BillingViewProps> = ({
         {/* Product Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {filteredProducts.map((product) => {
-            const isOutOfStock = product.currentStock <= 0;
             const inCart = cart.find((i) => i.product.id === product.id);
 
             return (
               <button
                 key={product.id}
                 onClick={() => addToCart(product)}
-                disabled={isOutOfStock}
                 className={`flex flex-col justify-between p-3 rounded-2xl border text-left transition relative group ${
-                  isOutOfStock
-                    ? 'bg-zinc-950/40 border-zinc-800/40 opacity-50 cursor-not-allowed'
-                    : inCart
+                  inCart
                     ? 'bg-yellow-500/10 border-yellow-500/50 shadow-lg shadow-yellow-500/10'
                     : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-850'
                 }`}
@@ -271,18 +264,6 @@ export const BillingView: React.FC<BillingViewProps> = ({
                     </span>
                     <span className="text-[10px] text-zinc-400"> /{product.unit}</span>
                   </div>
-
-                  <span
-                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                      isOutOfStock
-                        ? 'bg-rose-500/20 text-rose-400'
-                        : product.currentStock <= product.lowStockThreshold
-                        ? 'bg-orange-500/20 text-orange-400'
-                        : 'bg-emerald-500/20 text-emerald-400'
-                    }`}
-                  >
-                    {isOutOfStock ? 'OUT' : `${product.currentStock} ${product.unit}`}
-                  </span>
                 </div>
               </button>
             );

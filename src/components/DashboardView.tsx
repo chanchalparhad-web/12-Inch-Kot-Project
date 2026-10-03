@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Product, Sale, Customer, Expense } from '../types/billpro';
-import { IndianRupee, ShoppingBag, Package, AlertTriangle, Users, Wallet, TrendingUp, Plus, ArrowRight, Printer } from 'lucide-react';
+import { IndianRupee, ShoppingBag, Package, Users, Wallet, TrendingUp, Plus, ArrowRight, Printer } from 'lucide-react';
 import type { NavTab } from './Navigation';
 
 interface DashboardViewProps {
@@ -47,10 +47,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   });
 
   const estimatedProfit = todaySalesTotal - todayCostOfGoods - todayExpensesTotal;
-
-  const lowStockProducts = products.filter(
-    (p) => p.currentStock <= p.lowStockThreshold && p.active
-  );
 
   return (
     <div className="space-y-6 pb-20">
@@ -125,26 +121,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <p className="text-[11px] text-zinc-400 mt-1">Active items in catalog</p>
         </div>
 
-        {/* Low Stock Alert */}
-        <div
-          onClick={() => onNavigate('inventory')}
-          className={`bg-zinc-900 border rounded-2xl p-4 shadow-sm cursor-pointer transition ${
-            lowStockProducts.length > 0
-              ? 'border-orange-500/50 bg-orange-500/5 hover:bg-orange-500/10'
-              : 'border-zinc-800 hover:border-zinc-700'
-          }`}
-        >
-          <div className="flex items-center justify-between text-zinc-400 mb-2">
-            <span className="text-xs font-medium text-orange-400">Low Stock</span>
-            <div className="p-2 rounded-xl bg-orange-500/10 text-orange-400">
-              <AlertTriangle className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="text-xl sm:text-2xl font-extrabold text-orange-400">{lowStockProducts.length}</p>
-          <p className="text-[11px] text-orange-300/80 mt-1 flex items-center gap-1">
-            Need reorder <ArrowRight className="w-3 h-3" />
-          </p>
-        </div>
+
 
         {/* Total Customers */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 shadow-sm hover:border-zinc-700 transition">
@@ -220,15 +197,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </button>
 
         <button
-          onClick={() => onNavigate('inventory')}
+          onClick={() => onNavigate('products')}
           className="flex items-center gap-3 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-yellow-500/50 hover:bg-zinc-800/80 transition text-left group"
         >
-          <div className="p-2.5 rounded-xl bg-orange-500/20 text-orange-400 group-hover:scale-110 transition-transform">
-            <AlertTriangle className="w-5 h-5" />
+          <div className="p-2.5 rounded-xl bg-yellow-500/20 text-yellow-400 group-hover:scale-110 transition-transform">
+            <Package className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-xs font-bold text-white">Inventory</p>
-            <p className="text-[10px] text-zinc-400">Stock &amp; reorders</p>
+            <p className="text-xs font-bold text-white">Products</p>
+            <p className="text-[10px] text-zinc-400">View menu items</p>
           </div>
         </button>
 
@@ -246,39 +223,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </button>
       </div>
 
-      {/* Low Stock Warning Section */}
-      {lowStockProducts.length > 0 && (
-        <div className="bg-orange-950/20 border border-orange-500/30 rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-orange-400 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4" />
-              Low Stock Alert ({lowStockProducts.length} items)
-            </h3>
-            <button
-              onClick={() => onNavigate('inventory')}
-              className="text-xs font-semibold text-orange-300 hover:underline flex items-center gap-1"
-            >
-              Adjust Stock <ArrowRight className="w-3 h-3" />
-            </button>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-            {lowStockProducts.slice(0, 3).map((p) => (
-              <div
-                key={p.id}
-                className="bg-zinc-900/90 border border-zinc-800 rounded-xl p-2.5 flex items-center justify-between"
-              >
-                <div>
-                  <p className="text-xs font-semibold text-white truncate max-w-[140px]">{p.name}</p>
-                  <p className="text-[10px] text-zinc-400">SKU: {p.sku || 'N/A'}</p>
-                </div>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                  {p.currentStock} {p.unit}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+
 
       {/* Recent Bills List */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-sm">

@@ -39,9 +39,11 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
         {/* Brand Logo & Business Info */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-yellow-500 text-black font-extrabold flex items-center justify-center text-xl shadow-md shadow-yellow-500/20 tracking-wider">
-            BP
-          </div>
+          <img
+            src="/logo.png"
+            alt="12 Inch Fries Logo"
+            className="w-10 h-10 rounded-xl object-cover border border-yellow-500/30 shadow-md shadow-yellow-500/20"
+          />
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-bold text-lg text-white leading-none tracking-tight flex items-center gap-1.5">

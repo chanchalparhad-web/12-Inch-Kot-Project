@@ -1,4 +1,4 @@
-import type { Category, Product, Customer, Sale, Expense, PaymentMethod } from '../types/billpro';
+import type { Business, Category, Product, Customer, Sale, Expense, PaymentMethod } from '../types/billpro';
 import { BillProStore } from './storage';
 
 const API_BASE_URL = 'http://localhost:8080/api';
@@ -24,6 +24,38 @@ export class BillProApi {
     } catch {
       return false;
     }
+  }
+
+  // Business
+  static async getBusiness(): Promise<Business> {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/business?id=1`);
+      if (res.ok) {
+        const b = await res.json();
+        if (b && b.name) {
+          const mapped: Business = {
+            id: String(b.id || '1'),
+            name: b.name,
+            ownerName: b.ownerName || '',
+            mobile: b.mobile || '',
+            email: b.email || '',
+            address: b.address || '',
+            city: b.city || '',
+            state: b.state || '',
+            pincode: b.pincode || '',
+            gstEnabled: b.gstEnabled !== false,
+            gstin: b.gstin || '',
+            invoicePrefix: b.invoicePrefix || 'INV',
+            createdAt: b.createdAt || new Date().toISOString(),
+          };
+          BillProStore.saveBusiness(mapped);
+          return mapped;
+        }
+      }
+    } catch (err) {
+      console.warn('Backend API unavailable for business details', err);
+    }
+    return BillProStore.getBusiness();
   }
 
   // Products

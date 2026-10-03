@@ -187,17 +187,13 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
               <tr className="bg-zinc-950 text-zinc-400 border-b border-zinc-800">
                 <th className="p-3 font-medium">Product Name</th>
                 <th className="p-3 font-medium">Category</th>
-                <th className="p-3 font-medium">Purchase</th>
-                <th className="p-3 font-medium">Selling</th>
-                <th className="p-3 font-medium">GST %</th>
-                <th className="p-3 font-medium">Current Stock</th>
+                <th className="p-3 font-medium">Selling Price</th>
                 <th className="p-3 font-medium text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
               {filteredProducts.map((p) => {
                 const categoryObj = categories.find((c) => c.id === p.categoryId);
-                const isLow = p.currentStock <= p.lowStockThreshold;
 
                 return (
                   <tr key={p.id} className="hover:bg-zinc-800/40 transition">
@@ -214,22 +210,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                         {categoryObj?.name || 'General'}
                       </span>
                     </td>
-                    <td className="p-3 text-zinc-400">₹{p.purchasePrice.toFixed(2)}</td>
                     <td className="p-3 font-bold text-yellow-400">₹{p.sellingPrice.toFixed(2)}</td>
-                    <td className="p-3">{p.gstPercentage}%</td>
-                    <td className="p-3">
-                      <span
-                        className={`px-2 py-0.5 rounded font-bold ${
-                          p.currentStock === 0
-                            ? 'bg-rose-500/20 text-rose-400'
-                            : isLow
-                            ? 'bg-orange-500/20 text-orange-400'
-                            : 'bg-emerald-500/20 text-emerald-400'
-                        }`}
-                      >
-                        {p.currentStock} {p.unit}
-                      </span>
-                    </td>
                     <td className="p-3 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <button
@@ -298,54 +279,6 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="text-zinc-300 font-semibold block mb-1">Unit</label>
-                  <input
-                    type="text"
-                    value={formData.unit || 'pcs'}
-                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                    placeholder="pcs, kg, bot, gls..."
-                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-zinc-300 font-semibold block mb-1">SKU</label>
-                  <input
-                    type="text"
-                    value={formData.sku || ''}
-                    onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                    placeholder="FD-BRG-01"
-                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="text-zinc-300 font-semibold block mb-1">Barcode</label>
-                  <input
-                    type="text"
-                    value={formData.barcode || ''}
-                    onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                    placeholder="89012345678"
-                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="text-zinc-300 font-semibold block mb-1">Purchase Price (₹)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.purchasePrice || ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, purchasePrice: parseFloat(e.target.value) || 0 })
-                    }
-                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white focus:outline-none"
-                  />
-                </div>
-                <div>
                   <label className="text-zinc-300 font-semibold block mb-1">Selling Price (₹) *</label>
                   <input
                     type="number"
@@ -358,40 +291,36 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-yellow-500 font-bold text-yellow-400"
                   />
                 </div>
-                <div>
-                  <label className="text-zinc-300 font-semibold block mb-1">GST %</label>
-                  <input
-                    type="number"
-                    value={formData.gstPercentage || ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, gstPercentage: parseFloat(e.target.value) || 0 })
-                    }
-                    placeholder="5, 12, 18..."
-                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white focus:outline-none"
-                  />
-                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-zinc-300 font-semibold block mb-1">Current Stock</label>
+                  <label className="text-zinc-300 font-semibold block mb-1">Unit</label>
                   <input
-                    type="number"
-                    value={formData.currentStock || ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, currentStock: parseInt(e.target.value) || 0 })
-                    }
+                    type="text"
+                    value={formData.unit || 'pcs'}
+                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                    placeholder="pcs, bag..."
                     className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-zinc-300 font-semibold block mb-1">Low Stock Level</label>
+                  <label className="text-zinc-300 font-semibold block mb-1">SKU</label>
                   <input
-                    type="number"
-                    value={formData.lowStockThreshold || ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, lowStockThreshold: parseInt(e.target.value) || 0 })
-                    }
+                    type="text"
+                    value={formData.sku || ''}
+                    onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                    placeholder="SF-01"
+                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-zinc-300 font-semibold block mb-1">Barcode</label>
+                  <input
+                    type="text"
+                    value={formData.barcode || ''}
+                    onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                    placeholder="12F-001"
                     className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white focus:outline-none"
                   />
                 </div>

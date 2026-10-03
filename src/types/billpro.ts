@@ -46,7 +46,7 @@ export interface Product {
   purchasePrice: number;
   sellingPrice: number;
   gstPercentage: number;
-  unit: string; // pcs, kg, bot, gls, etc.
+  unit: string;
   currentStock: number;
   lowStockThreshold: number;
   active: boolean;

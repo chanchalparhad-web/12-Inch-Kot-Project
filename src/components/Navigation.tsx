@@ -1,20 +1,19 @@
 import React, { useState } from 'react';
-import { Home, ShoppingBag, BarChart3, Menu, Package, Layers, Users, Receipt, Printer, Settings, LogOut, X } from 'lucide-react';
+import { Home, ShoppingBag, BarChart3, Menu, Package, Users, Receipt, Printer, Settings, LogOut, X } from 'lucide-react';
 
-export type NavTab = 'home' | 'billing' | 'reports' | 'products' | 'inventory' | 'customers' | 'sales' | 'expenses' | 'printer' | 'settings';
+export type NavTab = 'home' | 'billing' | 'reports' | 'products' | 'customers' | 'sales' | 'expenses' | 'printer' | 'settings';
 
 interface NavigationProps {
   activeTab: NavTab;
   setActiveTab: (tab: NavTab) => void;
   onLogout: () => void;
-  lowStockCount: number;
+  lowStockCount?: number;
 }
 
 export const Navigation: React.FC<NavigationProps> = ({
   activeTab,
   setActiveTab,
   onLogout,
-  lowStockCount,
 }) => {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
 
@@ -26,7 +25,6 @@ export const Navigation: React.FC<NavigationProps> = ({
 
   const moreItems = [
     { id: 'products' as NavTab, label: 'Products', icon: Package },
-    { id: 'inventory' as NavTab, label: 'Inventory', icon: Layers, badge: lowStockCount },
     { id: 'customers' as NavTab, label: 'Customers', icon: Users },
     { id: 'sales' as NavTab, label: 'Sales History', icon: Receipt },
     { id: 'expenses' as NavTab, label: 'Expenses', icon: BarChart3 },
@@ -69,16 +67,13 @@ export const Navigation: React.FC<NavigationProps> = ({
           <button
             onClick={() => setShowMoreMenu(!showMoreMenu)}
             className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all relative ${
-              ['products', 'inventory', 'customers', 'sales', 'expenses', 'printer', 'settings'].includes(activeTab)
+              ['products', 'customers', 'sales', 'expenses', 'printer', 'settings'].includes(activeTab)
                 ? 'text-yellow-400 font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
             <div className="relative">
               <Menu className="w-5 h-5 mb-0.5" />
-              {lowStockCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-orange-500 rounded-full animate-ping" />
-              )}
             </div>
             <span className="text-[11px]">More</span>
           </button>
@@ -122,11 +117,6 @@ export const Navigation: React.FC<NavigationProps> = ({
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium truncate">{item.label}</p>
                     </div>
-                    {item.badge && item.badge > 0 ? (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                        {item.badge}
-                      </span>
-                    ) : null}
                   </button>
                 );
               })}

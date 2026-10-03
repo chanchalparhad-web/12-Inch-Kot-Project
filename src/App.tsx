@@ -5,7 +5,6 @@ import { Header } from './components/Header';
 import { DashboardView } from './components/DashboardView';
 import { BillingView } from './components/BillingView';
 import { ProductsView } from './components/ProductsView';
-import { InventoryView } from './components/InventoryView';
 import { CustomersView } from './components/CustomersView';
 import { SalesView } from './components/SalesView';
 import { ExpensesView } from './components/ExpensesView';
@@ -24,8 +23,6 @@ import type {
   Sale,
   Expense,
   PrinterDevice,
-  InventoryTransaction,
-  InventoryTransactionType,
 } from './types/billpro';
 import { LogIn } from 'lucide-react';
 
@@ -36,16 +33,13 @@ export function App() {
 
   // Domain States loaded from local persistence
   const [business, setBusiness] = useState<Business>(BillProStore.getBusiness());
-  const [user] = useState<User>(BillProStore.getUser());
+  const [user, setUser] = useState<User>(BillProStore.getUser());
   const [categories, setCategories] = useState<Category[]>(BillProStore.getCategories());
   const [products, setProducts] = useState<Product[]>(BillProStore.getProducts());
   const [customers, setCustomers] = useState<Customer[]>(BillProStore.getCustomers());
   const [sales, setSales] = useState<Sale[]>(BillProStore.getSales());
   const [expenses, setExpenses] = useState<Expense[]>(BillProStore.getExpenses());
   const [printer, setPrinter] = useState<PrinterDevice>(BillProStore.getPrinter());
-  const [transactions, setTransactions] = useState<InventoryTransaction[]>(
-    BillProStore.getTransactions()
-  );
 
   // Sync with Spring Boot REST API & PostgreSQL DB on Mount
   useEffect(() => {
@@ -54,12 +48,24 @@ export function App() {
       setIsBackendConnected(healthy);
       if (healthy) {
         try {
-          const [prods, cats, custs, exps] = await Promise.all([
+          const [biz, prods, cats, custs, exps] = await Promise.all([
+            BillProApi.getBusiness(),
             BillProApi.getProducts(),
             BillProApi.getCategories(),
             BillProApi.getCustomers(),
             BillProApi.getExpenses(),
           ]);
+          if (biz && biz.name) {
+            setBusiness(biz);
+            setUser({
+              id: 'u-1',
+              name: biz.ownerName || biz.name,
+              email: biz.email || 'owner@billpro.com',
+              mobile: biz.mobile || '9876543210',
+              role: 'OWNER',
+              businessId: biz.id,
+            });
+          }
           if (prods.length > 0) setProducts(prods);
           if (cats.length > 0) setCategories(cats);
           if (custs.length > 0) setCustomers(custs);
@@ -108,71 +114,10 @@ export function App() {
     BillProStore.savePrinter(printer);
   }, [printer]);
 
-  useEffect(() => {
-    BillProStore.saveTransactions(transactions);
-  }, [transactions]);
-
-  // Handler: Complete POS Sale & Auto-Reduce Stock (SRS 7.6, 7.9, 7.11)
+  // Handler: Complete POS Sale
   const handleCompleteSale = (newSale: Sale) => {
     setSales((prev) => [newSale, ...prev]);
-
-    setProducts((prevProducts) => {
-      return prevProducts.map((p) => {
-        const soldItem = newSale.items.find((i) => i.productId === p.id);
-        if (soldItem) {
-          const updatedStock = Math.max(0, p.currentStock - soldItem.quantity);
-          return { ...p, currentStock: updatedStock };
-        }
-        return p;
-      });
-    });
-
-    newSale.items.forEach((item) => {
-      const txn: InventoryTransaction = {
-        id: `txn-${Date.now()}-${Math.random()}`,
-        productId: item.productId,
-        productName: item.productName,
-        type: 'SALE_DEDUCTION',
-        quantity: -item.quantity,
-        referenceId: newSale.invoiceNumber,
-        reason: 'POS Invoice Sale',
-        createdAt: new Date().toISOString(),
-      };
-      setTransactions((prev) => [txn, ...prev]);
-    });
-
     setSelectedSaleForPrint(newSale);
-  };
-
-  // Handler: Manual Stock Adjustment (SRS 7.12)
-  const handleAdjustStock = (
-    productId: string,
-    delta: number,
-    type: InventoryTransactionType,
-    reason: string
-  ) => {
-    const targetProduct = products.find((p) => p.id === productId);
-    if (!targetProduct) return;
-
-    setProducts((prev) =>
-      prev.map((p) => {
-        if (p.id === productId) {
-          return { ...p, currentStock: Math.max(0, p.currentStock + delta) };
-        }
-        return p;
-      })
-    );
-
-    const txn: InventoryTransaction = {
-      id: `txn-${Date.now()}`,
-      productId,
-      productName: targetProduct.name,
-      type,
-      quantity: delta,
-      reason,
-      createdAt: new Date().toISOString(),
-    };
-    setTransactions((prev) => [txn, ...prev]);
   };
 
   // Product CRUD Handlers
@@ -258,19 +203,17 @@ export function App() {
     setExpenses((prev) => prev.filter((e) => e.id !== id));
   };
 
-  const lowStockCount = products.filter(
-    (p) => p.currentStock <= p.lowStockThreshold && p.active
-  ).length;
-
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
           <div className="text-center space-y-2">
-            <div className="w-16 h-16 rounded-2xl bg-yellow-500 text-black font-extrabold text-3xl flex items-center justify-center mx-auto shadow-xl shadow-yellow-500/20">
-              BP
-            </div>
-            <h1 className="text-2xl font-black text-white tracking-tight mt-2">BillPro</h1>
+            <img
+              src="/logo.png"
+              alt="12 Inch Fries Logo"
+              className="w-20 h-20 rounded-2xl object-cover border-2 border-yellow-500/40 mx-auto shadow-xl shadow-yellow-500/20"
+            />
+            <h1 className="text-2xl font-black text-white tracking-tight mt-2">12 Inch Fries</h1>
             <p className="text-xs text-yellow-400 font-semibold tracking-wide">
               Smart Billing. Better Business.
             </p>
@@ -371,14 +314,6 @@ export function App() {
           />
         )}
 
-        {activeTab === 'inventory' && (
-          <InventoryView
-            products={products}
-            transactions={transactions}
-            onAdjustStock={handleAdjustStock}
-          />
-        )}
-
         {activeTab === 'customers' && (
           <CustomersView
             customers={customers}
@@ -434,7 +369,6 @@ export function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onLogout={() => setIsAuthenticated(false)}
-        lowStockCount={lowStockCount}
       />
 
       {showBusinessSetup && (
