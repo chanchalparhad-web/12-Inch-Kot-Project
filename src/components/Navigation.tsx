@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Home, ShoppingBag, BarChart3, Menu, Package, Users, Receipt, Printer, Settings, LogOut, X } from 'lucide-react';
+import { Home, ShoppingBag, BarChart3, Menu, Package, Receipt, Printer, Settings, LogOut, X } from 'lucide-react';
 
-export type NavTab = 'home' | 'billing' | 'reports' | 'products' | 'customers' | 'sales' | 'expenses' | 'printer' | 'settings';
+export type NavTab = 'home' | 'billing' | 'reports' | 'products' | 'sales' | 'expenses' | 'printer' | 'settings';
 
 interface NavigationProps {
   activeTab: NavTab;
@@ -25,7 +25,6 @@ export const Navigation: React.FC<NavigationProps> = ({
 
   const moreItems = [
     { id: 'products' as NavTab, label: 'Products', icon: Package },
-    { id: 'customers' as NavTab, label: 'Customers', icon: Users },
     { id: 'sales' as NavTab, label: 'Sales History', icon: Receipt },
     { id: 'expenses' as NavTab, label: 'Expenses', icon: BarChart3 },
     { id: 'printer' as NavTab, label: 'Printer (SRS588)', icon: Printer },
@@ -67,7 +66,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           <button
             onClick={() => setShowMoreMenu(!showMoreMenu)}
             className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all relative ${
-              ['products', 'customers', 'sales', 'expenses', 'printer', 'settings'].includes(activeTab)
+              ['products', 'sales', 'expenses', 'printer', 'settings'].includes(activeTab)
                 ? 'text-yellow-400 font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}

@@ -13,8 +13,6 @@ export interface Business {
   city: string;
   state: string;
   pincode: string;
-  gstEnabled: boolean;
-  gstin: string;
   invoicePrefix: string;
   logoUrl?: string;
   createdAt: string;
@@ -45,7 +43,6 @@ export interface Product {
   barcode: string;
   purchasePrice: number;
   sellingPrice: number;
-  gstPercentage: number;
   unit: string;
   currentStock: number;
   lowStockThreshold: number;
@@ -71,7 +68,6 @@ export interface Customer {
   mobile: string;
   email?: string;
   address?: string;
-  gstin?: string;
   totalBills?: number;
   totalPurchase?: number;
   lastPurchaseDate?: string;
@@ -83,8 +79,6 @@ export interface CartItem {
   quantity: number;
   unitPrice: number;
   discount: number;
-  gstPercentage: number;
-  taxAmount: number;
   totalAmount: number;
 }
 
@@ -95,7 +89,6 @@ export interface SaleItemSnapshot {
   quantity: number;
   unitPrice: number;
   discount: number;
-  tax: number;
   total: number;
 }
 
@@ -109,9 +102,6 @@ export interface Sale {
   items: SaleItemSnapshot[];
   subtotal: number;
   discount: number;
-  tax: number;
-  cgst: number;
-  sgst: number;
   grandTotal: number;
   paymentMethod: PaymentMethod;
   paymentStatus: 'PAID' | 'PENDING' | 'FAILED';

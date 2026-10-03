@@ -116,31 +116,6 @@ export const BusinessSetupModal: React.FC<BusinessSetupModalProps> = ({
             </div>
           </div>
 
-          <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-white text-xs">Enable GST Billing</span>
-              <input
-                type="checkbox"
-                checked={formData.gstEnabled}
-                onChange={(e) => setFormData({ ...formData, gstEnabled: e.target.checked })}
-                className="w-4 h-4 accent-yellow-500 rounded cursor-pointer"
-              />
-            </div>
-
-            {formData.gstEnabled && (
-              <div>
-                <label className="text-zinc-400 font-semibold block mb-1">Business GSTIN</label>
-                <input
-                  type="text"
-                  value={formData.gstin}
-                  onChange={(e) => setFormData({ ...formData, gstin: e.target.value })}
-                  placeholder="27AABCU9603R1ZM"
-                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-white font-mono uppercase focus:outline-none"
-                />
-              </div>
-            )}
-          </div>
-
           <button
             type="submit"
             className="w-full py-3 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold text-xs shadow-lg shadow-yellow-500/20 transition mt-2"

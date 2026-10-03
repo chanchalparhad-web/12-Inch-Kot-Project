@@ -20,6 +20,9 @@ public class Sale {
     @Column(name = "customer_id")
     private Long customerId;
 
+    @Column(name = "customer_name")
+    private String customerName;
+
     @Column(name = "invoice_number", nullable = false, length = 100)
     private String invoiceNumber;
 
@@ -46,10 +49,11 @@ public class Sale {
 
     public Sale() {}
 
-    public Sale(Long id, Long businessId, Long customerId, String invoiceNumber, BigDecimal subtotal, BigDecimal discount, BigDecimal tax, BigDecimal grandTotal, String paymentStatus, List<SaleItem> items) {
+    public Sale(Long id, Long businessId, Long customerId, String customerName, String invoiceNumber, BigDecimal subtotal, BigDecimal discount, BigDecimal tax, BigDecimal grandTotal, String paymentStatus, List<SaleItem> items) {
         this.id = id;
         this.businessId = businessId;
         this.customerId = customerId;
+        this.customerName = customerName;
         this.invoiceNumber = invoiceNumber;
         this.subtotal = subtotal != null ? subtotal : BigDecimal.ZERO;
         this.discount = discount != null ? discount : BigDecimal.ZERO;
@@ -67,6 +71,7 @@ public class Sale {
         private Long id;
         private Long businessId;
         private Long customerId;
+        private String customerName;
         private String invoiceNumber;
         private BigDecimal subtotal = BigDecimal.ZERO;
         private BigDecimal discount = BigDecimal.ZERO;
@@ -78,6 +83,7 @@ public class Sale {
         public SaleBuilder id(Long id) { this.id = id; return this; }
         public SaleBuilder businessId(Long businessId) { this.businessId = businessId; return this; }
         public SaleBuilder customerId(Long customerId) { this.customerId = customerId; return this; }
+        public SaleBuilder customerName(String customerName) { this.customerName = customerName; return this; }
         public SaleBuilder invoiceNumber(String invoiceNumber) { this.invoiceNumber = invoiceNumber; return this; }
         public SaleBuilder subtotal(BigDecimal subtotal) { this.subtotal = subtotal; return this; }
         public SaleBuilder discount(BigDecimal discount) { this.discount = discount; return this; }
@@ -87,7 +93,7 @@ public class Sale {
         public SaleBuilder items(List<SaleItem> items) { this.items = items; return this; }
 
         public Sale build() {
-            return new Sale(id, businessId, customerId, invoiceNumber, subtotal, discount, tax, grandTotal, paymentStatus, items);
+            return new Sale(id, businessId, customerId, customerName, invoiceNumber, subtotal, discount, tax, grandTotal, paymentStatus, items);
         }
     }
 
@@ -97,6 +103,8 @@ public class Sale {
     public void setBusinessId(Long businessId) { this.businessId = businessId; }
     public Long getCustomerId() { return customerId; }
     public void setCustomerId(Long customerId) { this.customerId = customerId; }
+    public String getCustomerName() { return customerName; }
+    public void setCustomerName(String customerName) { this.customerName = customerName; }
     public String getInvoiceNumber() { return invoiceNumber; }
     public void setInvoiceNumber(String invoiceNumber) { this.invoiceNumber = invoiceNumber; }
     public BigDecimal getSubtotal() { return subtotal; }

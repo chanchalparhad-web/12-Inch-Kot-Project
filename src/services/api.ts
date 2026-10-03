@@ -1,7 +1,7 @@
 import type { Business, Category, Product, Customer, Sale, Expense, PaymentMethod } from '../types/billpro';
 import { BillProStore } from './storage';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8080/api';
 
 async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout = 3000): Promise<Response> {
   const controller = new AbortController();
@@ -43,8 +43,6 @@ export class BillProApi {
             city: b.city || '',
             state: b.state || '',
             pincode: b.pincode || '',
-            gstEnabled: b.gstEnabled !== false,
-            gstin: b.gstin || '',
             invoicePrefix: b.invoicePrefix || 'INV',
             createdAt: b.createdAt || new Date().toISOString(),
           };
@@ -75,7 +73,6 @@ export class BillProApi {
             barcode: p.barcode || '',
             purchasePrice: Number(p.purchasePrice || 0),
             sellingPrice: Number(p.sellingPrice || 0),
-            gstPercentage: Number(p.gstPercentage || 0),
             unit: p.unit || 'pcs',
             currentStock: Number(p.currentStock || 0),
             lowStockThreshold: Number(p.lowStockThreshold || 5),
@@ -100,7 +97,6 @@ export class BillProApi {
         barcode: product.barcode || '',
         purchasePrice: product.purchasePrice || 0,
         sellingPrice: product.sellingPrice,
-        gstPercentage: product.gstPercentage || 0,
         unit: product.unit || 'pcs',
         currentStock: product.currentStock || 0,
         lowStockThreshold: product.lowStockThreshold || 5,
@@ -128,7 +124,6 @@ export class BillProApi {
           barcode: p.barcode,
           purchasePrice: Number(p.purchasePrice),
           sellingPrice: Number(p.sellingPrice),
-          gstPercentage: Number(p.gstPercentage),
           unit: p.unit,
           currentStock: Number(p.currentStock),
           lowStockThreshold: Number(p.lowStockThreshold),
@@ -153,7 +148,6 @@ export class BillProApi {
       barcode: product.barcode || '',
       purchasePrice: product.purchasePrice || 0,
       sellingPrice: product.sellingPrice,
-      gstPercentage: product.gstPercentage || 0,
       unit: product.unit || 'pcs',
       currentStock: product.currentStock || 0,
       lowStockThreshold: product.lowStockThreshold || 5,
@@ -205,7 +199,6 @@ export class BillProApi {
             mobile: c.mobile || '',
             email: c.email || '',
             address: c.address || '',
-            gstin: c.gstin || '',
             totalBills: Number(c.totalBills || 0),
             totalPurchase: Number(c.totalPurchase || 0),
             lastPurchaseDate: c.lastPurchaseDate || undefined,
@@ -228,7 +221,6 @@ export class BillProApi {
         mobile: customer.mobile,
         email: customer.email || '',
         address: customer.address || '',
-        gstin: customer.gstin || '',
         businessId: 1,
       };
 
@@ -247,7 +239,6 @@ export class BillProApi {
           mobile: c.mobile,
           email: c.email || '',
           address: c.address || '',
-          gstin: c.gstin || '',
           totalBills: Number(c.totalBills || 0),
           totalPurchase: Number(c.totalPurchase || 0),
           createdAt: c.createdAt || new Date().toISOString(),
@@ -267,7 +258,6 @@ export class BillProApi {
       mobile: customer.mobile,
       email: customer.email || '',
       address: customer.address || '',
-      gstin: customer.gstin || '',
       totalBills: customer.totalBills || 0,
       totalPurchase: customer.totalPurchase || 0,
       createdAt: new Date().toISOString(),
@@ -289,10 +279,8 @@ export class BillProApi {
     customerName?: string;
   }): Promise<Sale> {
     try {
-      const payload = {
+      const payload: Record<string, any> = {
         businessId: 1,
-        customerId: saleData.customerId ? Number(saleData.customerId.replace(/\D/g, '')) || 1 : 1,
-        customerName: saleData.customerName || 'Walk-in Customer',
         paymentMethod: saleData.paymentMethod,
         discount: saleData.discount,
         tax: saleData.tax,
@@ -304,6 +292,12 @@ export class BillProApi {
           tax: item.tax || 0,
         })),
       };
+      if (saleData.customerId) {
+        payload.customerId = Number(saleData.customerId.replace(/\D/g, '')) || null;
+      }
+      if (saleData.customerName) {
+        payload.customerName = saleData.customerName;
+      }
 
       const res = await fetchWithTimeout(`${API_BASE_URL}/sales`, {
         method: 'POST',
@@ -318,7 +312,7 @@ export class BillProApi {
           invoiceNumber: s.invoiceNumber || `INV-${String(s.id).padStart(5, '0')}`,
           businessId: '1',
           customerId: s.customerId ? String(s.customerId) : undefined,
-          customerName: s.customerName || 'Walk-in Customer',
+          customerName: s.customerName || undefined,
           items: (s.items || []).map((it: any) => ({
             id: String(it.id),
             productId: String(it.productId),
@@ -326,14 +320,10 @@ export class BillProApi {
             quantity: Number(it.quantity),
             unitPrice: Number(it.unitPrice),
             discount: Number(it.discount || 0),
-            tax: Number(it.tax || 0),
             total: Number(it.total),
           })),
           subtotal: Number(s.subtotal),
-          discount: Number(s.discount),
-          tax: Number(s.tax),
-          cgst: Number(s.cgst || (s.tax / 2)),
-          sgst: Number(s.sgst || (s.tax / 2)),
+          discount: Number(s.discount || 0),
           grandTotal: Number(s.grandTotal),
           paymentMethod: (s.paymentMethod as PaymentMethod) || 'CASH',
           paymentStatus: s.paymentStatus || 'PAID',
@@ -354,7 +344,7 @@ export class BillProApi {
       invoiceNumber: `INV-${Math.floor(10000 + Math.random() * 90000)}`,
       businessId: '1',
       customerId: saleData.customerId,
-      customerName: saleData.customerName || 'Walk-in Customer',
+      customerName: saleData.customerName || undefined,
       items: saleData.items.map((it, idx) => ({
         id: `item-${Date.now()}-${idx}`,
         productId: it.productId,
@@ -362,14 +352,10 @@ export class BillProApi {
         quantity: it.quantity,
         unitPrice: it.unitPrice,
         discount: it.discount || 0,
-        tax: it.tax || 0,
         total: it.total,
       })),
       subtotal: saleData.subtotal,
       discount: saleData.discount,
-      tax: saleData.tax,
-      cgst: saleData.tax / 2,
-      sgst: saleData.tax / 2,
       grandTotal: saleData.grandTotal,
       paymentMethod: saleData.paymentMethod,
       paymentStatus: 'PAID',

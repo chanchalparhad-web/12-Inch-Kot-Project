@@ -36,7 +36,6 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     categoryId: categories[0]?.id || '',
     purchasePrice: 0,
     sellingPrice: 0,
-    gstPercentage: 5,
     unit: 'pcs',
     currentStock: 10,
     lowStockThreshold: 5,
@@ -58,7 +57,6 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       categoryId: categories[0]?.id || '',
       purchasePrice: 0,
       sellingPrice: 0,
-      gstPercentage: 5,
       unit: 'pcs',
       currentStock: 20,
       lowStockThreshold: 5,
@@ -117,7 +115,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             Product Management
           </h2>
           <p className="text-xs text-zinc-400 mt-0.5">
-            Manage product catalog, prices, GST rates and stock thresholds.
+            Manage product catalog, prices, categories and stock thresholds.
           </p>
         </div>
 

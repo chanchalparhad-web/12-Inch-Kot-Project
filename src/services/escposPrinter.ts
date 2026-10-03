@@ -45,9 +45,6 @@ export function generateThermalReceiptText(sale: Sale, business: Business): stri
     lines.push(centerText(`${business.city || ''}, ${business.state || ''}`, LINE_WIDTH));
   }
   if (business.mobile) lines.push(centerText(`Ph: ${business.mobile}`, LINE_WIDTH));
-  if (business.gstEnabled && business.gstin) {
-    lines.push(centerText(`GSTIN: ${business.gstin}`, LINE_WIDTH));
-  }
   lines.push('='.repeat(LINE_WIDTH));
 
   lines.push(`Invoice: ${sale.invoiceNumber}`);
@@ -81,11 +78,6 @@ export function generateThermalReceiptText(sale: Sale, business: Business): stri
 
   if (sale.discount > 0) {
     lines.push(formatRow('Discount', `-₹${sale.discount.toFixed(2)}`));
-  }
-
-  if (business.gstEnabled && sale.tax > 0) {
-    lines.push(formatRow('CGST', `₹${sale.cgst.toFixed(2)}`));
-    lines.push(formatRow('SGST', `₹${sale.sgst.toFixed(2)}`));
   }
 
   lines.push('-'.repeat(LINE_WIDTH));

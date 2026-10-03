@@ -5,7 +5,6 @@ import { Header } from './components/Header';
 import { DashboardView } from './components/DashboardView';
 import { BillingView } from './components/BillingView';
 import { ProductsView } from './components/ProductsView';
-import { CustomersView } from './components/CustomersView';
 import { SalesView } from './components/SalesView';
 import { ExpensesView } from './components/ExpensesView';
 import { ReportsView } from './components/ReportsView';
@@ -19,15 +18,15 @@ import type {
   User,
   Category,
   Product,
-  Customer,
   Sale,
   Expense,
   PrinterDevice,
 } from './types/billpro';
-import { LogIn } from 'lucide-react';
+import { LogIn, Eye, EyeOff } from 'lucide-react';
 
 export function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
 
@@ -36,7 +35,6 @@ export function App() {
   const [user, setUser] = useState<User>(BillProStore.getUser());
   const [categories, setCategories] = useState<Category[]>(BillProStore.getCategories());
   const [products, setProducts] = useState<Product[]>(BillProStore.getProducts());
-  const [customers, setCustomers] = useState<Customer[]>(BillProStore.getCustomers());
   const [sales, setSales] = useState<Sale[]>(BillProStore.getSales());
   const [expenses, setExpenses] = useState<Expense[]>(BillProStore.getExpenses());
   const [printer, setPrinter] = useState<PrinterDevice>(BillProStore.getPrinter());
@@ -48,11 +46,10 @@ export function App() {
       setIsBackendConnected(healthy);
       if (healthy) {
         try {
-          const [biz, prods, cats, custs, exps] = await Promise.all([
+          const [biz, prods, cats, exps] = await Promise.all([
             BillProApi.getBusiness(),
             BillProApi.getProducts(),
             BillProApi.getCategories(),
-            BillProApi.getCustomers(),
             BillProApi.getExpenses(),
           ]);
           if (biz && biz.name) {
@@ -68,7 +65,6 @@ export function App() {
           }
           if (prods.length > 0) setProducts(prods);
           if (cats.length > 0) setCategories(cats);
-          if (custs.length > 0) setCustomers(custs);
           if (exps.length > 0) setExpenses(exps);
         } catch (e) {
           console.warn('Sync with PostgreSQL backend failed', e);
@@ -97,10 +93,6 @@ export function App() {
   useEffect(() => {
     BillProStore.saveCategories(categories);
   }, [categories]);
-
-  useEffect(() => {
-    BillProStore.saveCustomers(customers);
-  }, [customers]);
 
   useEffect(() => {
     BillProStore.saveSales(sales);
@@ -137,7 +129,6 @@ export function App() {
         barcode: prodData.barcode || `890${Math.floor(100000000 + Math.random() * 900000000)}`,
         purchasePrice: prodData.purchasePrice || 0,
         sellingPrice: prodData.sellingPrice || 0,
-        gstPercentage: prodData.gstPercentage || 0,
         unit: prodData.unit || 'pcs',
         currentStock: prodData.currentStock || 0,
         lowStockThreshold: prodData.lowStockThreshold || 5,
@@ -161,27 +152,6 @@ export function App() {
       name,
     };
     setCategories((prev) => [...prev, newCat]);
-  };
-
-  // Customer CRUD Handler
-  const handleSaveCustomer = (custData: Partial<Customer>) => {
-    if (custData.id) {
-      setCustomers((prev) =>
-        prev.map((c) => (c.id === custData.id ? ({ ...c, ...custData } as Customer) : c))
-      );
-    } else {
-      const newCust: Customer = {
-        id: `cust-${Date.now()}`,
-        businessId: business.id,
-        name: custData.name || 'New Customer',
-        mobile: custData.mobile || '',
-        email: custData.email,
-        address: custData.address,
-        gstin: custData.gstin,
-        createdAt: new Date().toISOString(),
-      };
-      setCustomers((prev) => [...prev, newCust]);
-    }
   };
 
   // Expense Handlers
@@ -236,11 +206,21 @@ export function App() {
             </div>
             <div>
               <label className="text-zinc-300 font-semibold block mb-1">Password</label>
-              <input
-                type="password"
-                defaultValue="password123"
-                className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-yellow-500"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  defaultValue="password123"
+                  className="w-full pl-4 pr-11 py-3 bg-zinc-950 border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-yellow-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-1 transition"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             <button
               type="submit"
@@ -280,7 +260,6 @@ export function App() {
           <DashboardView
             sales={sales}
             products={products}
-            customers={customers}
             expenses={expenses}
             onNavigate={(tab) => setActiveTab(tab)}
             onOpenAddProduct={() => {
@@ -295,10 +274,8 @@ export function App() {
           <BillingView
             products={products}
             categories={categories}
-            customers={customers}
             business={business}
             onCompleteSale={handleCompleteSale}
-            onOpenAddCustomer={() => setActiveTab('customers')}
           />
         )}
 
@@ -311,14 +288,6 @@ export function App() {
             onSaveCategory={handleSaveCategory}
             isAddProductOpen={isAddProductOpen}
             onCloseAddProductModal={() => setIsAddProductOpen(false)}
-          />
-        )}
-
-        {activeTab === 'customers' && (
-          <CustomersView
-            customers={customers}
-            sales={sales}
-            onSaveCustomer={handleSaveCustomer}
           />
         )}
 
@@ -352,7 +321,7 @@ export function App() {
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
               <h2 className="text-lg font-bold text-white mb-2">Business Configuration Settings</h2>
               <p className="text-xs text-zinc-400 mb-4">
-                Update business profile, address, GSTIN and invoice formatting.
+                Update business profile, address, and invoice formatting.
               </p>
               <button
                 onClick={() => setShowBusinessSetup(true)}

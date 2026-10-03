@@ -1,28 +1,24 @@
 import React, { useState } from 'react';
-import type { Product, Category, Customer, CartItem, Sale, PaymentMethod, Business } from '../types/billpro';
-import { Search, Plus, Minus, Trash2, ShoppingBag, CreditCard, Banknote, QrCode, Tag, UserCheck, X } from 'lucide-react';
+import type { Product, Category, CartItem, Sale, PaymentMethod, Business } from '../types/billpro';
+import { Search, Plus, Minus, Trash2, ShoppingBag, CreditCard, Banknote, QrCode, Tag, User, X } from 'lucide-react';
 
 interface BillingViewProps {
   products: Product[];
   categories: Category[];
-  customers: Customer[];
   business: Business;
   onCompleteSale: (sale: Sale, cashReceived?: number) => void;
-  onOpenAddCustomer: () => void;
 }
 
 export const BillingView: React.FC<BillingViewProps> = ({
   products,
   categories,
-  customers,
   business,
   onCompleteSale,
-  onOpenAddCustomer,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [customerNameInput, setCustomerNameInput] = useState<string>('');
 
   // Payment Modal state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -52,17 +48,14 @@ export const BillingView: React.FC<BillingViewProps> = ({
         const newQty = item.quantity + 1;
         const updatedCart = [...prevCart];
         const itemTotal = (product.sellingPrice - item.discount) * newQty;
-        const taxAmt = business.gstEnabled ? (itemTotal * (product.gstPercentage || 0)) / 100 : 0;
         updatedCart[existingIndex] = {
           ...item,
           quantity: newQty,
-          taxAmount: taxAmt,
-          totalAmount: itemTotal + taxAmt,
+          totalAmount: itemTotal,
         };
         return updatedCart;
       } else {
         const itemTotal = product.sellingPrice;
-        const taxAmt = business.gstEnabled ? (itemTotal * (product.gstPercentage || 0)) / 100 : 0;
         return [
           ...prevCart,
           {
@@ -70,9 +63,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
             quantity: 1,
             unitPrice: product.sellingPrice,
             discount: 0,
-            gstPercentage: product.gstPercentage || 0,
-            taxAmount: taxAmt,
-            totalAmount: itemTotal + taxAmt,
+            totalAmount: itemTotal,
           },
         ];
       }
@@ -87,12 +78,10 @@ export const BillingView: React.FC<BillingViewProps> = ({
             const newQty = item.quantity + delta;
             if (newQty <= 0) return null;
             const itemTotal = (item.unitPrice - item.discount) * newQty;
-            const taxAmt = business.gstEnabled ? (itemTotal * (item.gstPercentage || 0)) / 100 : 0;
             return {
               ...item,
               quantity: newQty,
-              taxAmount: taxAmt,
-              totalAmount: itemTotal + taxAmt,
+              totalAmount: itemTotal,
             };
           }
           return item;
@@ -108,42 +97,29 @@ export const BillingView: React.FC<BillingViewProps> = ({
   const clearCart = () => {
     setCart([]);
     setDiscountInput(0);
-    setSelectedCustomer(null);
+    setCustomerNameInput('');
   };
 
-  // Billing Totals Calculation (SRS 7.7 & 7.8)
+  // Billing Totals Calculation without GST
   const cartSubtotal = cart.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0);
   const totalItemDiscounts = cart.reduce((acc, item) => acc + item.discount * item.quantity, 0);
   const cartDiscount = totalItemDiscounts + discountInput;
-  const taxableSubtotal = Math.max(0, cartSubtotal - cartDiscount);
+  const grandTotal = Math.max(0, cartSubtotal - cartDiscount);
 
-  // Calculate Tax (CGST + SGST) if GST enabled
-  let totalTax = 0;
-  if (business.gstEnabled) {
-    totalTax = cart.reduce((acc, item) => {
-      const itemTaxable = Math.max(0, (item.unitPrice - item.discount) * item.quantity);
-      return acc + (itemTaxable * item.gstPercentage) / 100;
-    }, 0);
-  }
-
-  const cgst = totalTax / 2;
-  const sgst = totalTax / 2;
-  const grandTotal = Math.max(0, taxableSubtotal + totalTax);
-
-  // Cash Change Calculation (SRS 7.9)
+  // Cash Change Calculation
   const cashNum = parseFloat(cashAmountInput) || 0;
   const changeReturned = Math.max(0, cashNum - grandTotal);
 
   const handleConfirmPayment = () => {
     if (cart.length === 0) return;
 
+    const trimmedCustomerName = customerNameInput.trim();
+
     const newSale: Sale = {
       id: `sale-${Date.now()}`,
       businessId: business.id,
       invoiceNumber: `${business.invoicePrefix || 'INV'}-${Math.floor(10000 + Math.random() * 90000)}`,
-      customerId: selectedCustomer?.id,
-      customerName: selectedCustomer?.name || 'Walk-in Customer',
-      customerMobile: selectedCustomer?.mobile,
+      customerName: trimmedCustomerName || undefined,
       items: cart.map((item) => ({
         id: `item-${Math.random()}`,
         productId: item.product.id,
@@ -151,14 +127,10 @@ export const BillingView: React.FC<BillingViewProps> = ({
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         discount: item.discount,
-        tax: item.taxAmount,
         total: item.totalAmount,
       })),
       subtotal: cartSubtotal,
       discount: cartDiscount,
-      tax: totalTax,
-      cgst,
-      sgst,
       grandTotal,
       paymentMethod,
       paymentStatus: 'PAID',
@@ -295,51 +267,28 @@ export const BillingView: React.FC<BillingViewProps> = ({
             )}
           </div>
 
-          <div className="mb-3 bg-zinc-950/80 border border-zinc-800 rounded-xl p-2.5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <UserCheck className="w-4 h-4 text-yellow-400" />
-              <div>
-                <p className="text-xs font-semibold text-white">
-                  {selectedCustomer ? selectedCustomer.name : 'Walk-in Customer'}
-                </p>
-                <p className="text-[10px] text-zinc-400">
-                  {selectedCustomer ? selectedCustomer.mobile : 'Optional billing profile'}
-                </p>
-              </div>
+          <div className="mb-3 bg-zinc-950/80 border border-zinc-800 rounded-xl p-2.5 flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-yellow-500/10 text-yellow-400 shrink-0">
+              <User className="w-4 h-4" />
             </div>
-
-            {selectedCustomer ? (
+            <div className="flex-1 min-w-0">
+              <input
+                type="text"
+                placeholder="Customer Name (Optional)"
+                value={customerNameInput}
+                onChange={(e) => setCustomerNameInput(e.target.value)}
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-yellow-500"
+              />
+            </div>
+            {customerNameInput && (
               <button
-                onClick={() => setSelectedCustomer(null)}
-                className="text-xs text-zinc-400 hover:text-white"
+                type="button"
+                onClick={() => setCustomerNameInput('')}
+                className="text-zinc-400 hover:text-white p-1 text-xs"
+                title="Clear Customer Name"
               >
-                Change
+                <X className="w-3.5 h-3.5" />
               </button>
-            ) : (
-              <div className="flex items-center gap-1">
-                <select
-                  value=""
-                  onChange={(e) => {
-                    const found = customers.find((c) => c.id === e.target.value);
-                    if (found) setSelectedCustomer(found);
-                  }}
-                  className="bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1 text-[11px] text-zinc-200 focus:outline-none"
-                >
-                  <option value="">Select Customer</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.mobile})
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={onOpenAddCustomer}
-                  className="p-1 rounded-lg bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20"
-                  title="Add Customer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
-              </div>
             )}
           </div>
 
@@ -359,7 +308,6 @@ export const BillingView: React.FC<BillingViewProps> = ({
                     <p className="text-xs font-semibold text-white truncate">{item.product.name}</p>
                     <p className="text-[10px] text-zinc-400">
                       ₹{item.unitPrice.toFixed(0)} × {item.quantity} {item.product.unit}
-                      {business.gstEnabled && ` (${item.gstPercentage}% GST)`}
                     </p>
                   </div>
 
@@ -418,19 +366,6 @@ export const BillingView: React.FC<BillingViewProps> = ({
                 />
               </div>
             </div>
-
-            {business.gstEnabled && totalTax > 0 && (
-              <>
-                <div className="flex justify-between text-[11px] text-zinc-400">
-                  <span>CGST (Intra-state)</span>
-                  <span>₹{cgst.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-[11px] text-zinc-400">
-                  <span>SGST (Intra-state)</span>
-                  <span>₹{sgst.toFixed(2)}</span>
-                </div>
-              </>
-            )}
 
             <div className="flex justify-between items-center text-base font-extrabold text-white border-t border-zinc-800/80 pt-2">
               <span>Grand Total</span>

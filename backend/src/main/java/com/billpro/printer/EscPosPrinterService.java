@@ -11,6 +11,7 @@ import com.billpro.sale.SaleRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
@@ -64,9 +65,6 @@ public class EscPosPrinterService {
             textBuilder.append(centerText((business.getCity() != null ? business.getCity() : "") + ", " + 
                     (business.getState() != null ? business.getState() : ""))).append("\n");
         }
-        if (Boolean.TRUE.equals(business.getGstEnabled()) && business.getGstin() != null) {
-            textBuilder.append(centerText("GSTIN: " + business.getGstin())).append("\n");
-        }
         textBuilder.append("================================\n");
 
         textBuilder.append("Invoice: ").append(sale.getInvoiceNumber()).append("\n");
@@ -83,27 +81,21 @@ public class EscPosPrinterService {
                     : item.getProductName();
             nameTrunc = String.format("%-14s", nameTrunc);
             String qtyStr = String.format("%3d", item.getQuantity());
-            String rateStr = String.format("%6s", item.getUnitPrice().setScale(0, BigDecimal.ROUND_HALF_UP).toString());
-            String amountStr = String.format("%7s", item.getTotal().setScale(2, BigDecimal.ROUND_HALF_UP).toString());
+            String rateStr = String.format("%6s", item.getUnitPrice().setScale(0, RoundingMode.HALF_UP).toString());
+            String amountStr = String.format("%7s", item.getTotal().setScale(2, RoundingMode.HALF_UP).toString());
 
             textBuilder.append(nameTrunc).append(" ").append(qtyStr).append(" ").append(rateStr).append(" ").append(amountStr).append("\n");
         }
 
         textBuilder.append("--------------------------------\n");
-        textBuilder.append(formatRow("Subtotal", "₹" + sale.getSubtotal().setScale(2, BigDecimal.ROUND_HALF_UP))).append("\n");
+        textBuilder.append(formatRow("Subtotal", "₹" + sale.getSubtotal().setScale(2, RoundingMode.HALF_UP))).append("\n");
 
         if (sale.getDiscount() != null && sale.getDiscount().compareTo(BigDecimal.ZERO) > 0) {
-            textBuilder.append(formatRow("Discount", "-₹" + sale.getDiscount().setScale(2, BigDecimal.ROUND_HALF_UP))).append("\n");
-        }
-
-        if (Boolean.TRUE.equals(business.getGstEnabled()) && sale.getTax() != null && sale.getTax().compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal halfTax = sale.getTax().divide(BigDecimal.valueOf(2), 2, BigDecimal.ROUND_HALF_UP);
-            textBuilder.append(formatRow("CGST", "₹" + halfTax)).append("\n");
-            textBuilder.append(formatRow("SGST", "₹" + halfTax)).append("\n");
+            textBuilder.append(formatRow("Discount", "-₹" + sale.getDiscount().setScale(2, RoundingMode.HALF_UP))).append("\n");
         }
 
         textBuilder.append("--------------------------------\n");
-        textBuilder.append(formatRow("TOTAL", "₹" + sale.getGrandTotal().setScale(2, BigDecimal.ROUND_HALF_UP))).append("\n");
+        textBuilder.append(formatRow("TOTAL", "₹" + sale.getGrandTotal().setScale(2, RoundingMode.HALF_UP))).append("\n");
         textBuilder.append("--------------------------------\n");
 
         textBuilder.append("Payment Mode: ").append(payment != null ? payment.getMethod() : "CASH").append("\n\n");

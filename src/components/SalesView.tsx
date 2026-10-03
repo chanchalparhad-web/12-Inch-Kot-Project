@@ -145,7 +145,7 @@ export const SalesView: React.FC<SalesViewProps> = ({ sales, onViewInvoice }) =>
                       minute: '2-digit',
                     })}
                   </td>
-                  <td className="p-3 font-medium text-white">{sale.customerName || 'Walk-in'}</td>
+                  <td className="p-3 font-medium text-white">{sale.customerName || '-'}</td>
                   <td className="p-3">
                     <span className="px-2 py-0.5 rounded bg-zinc-950 text-zinc-300 border border-zinc-800 text-[10px] font-bold">
                       {sale.paymentMethod}

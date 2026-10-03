@@ -9,6 +9,7 @@ import java.util.List;
 public class SaleRequestDto {
     private Long businessId = 1L;
     private Long customerId;
+    private String customerName;
 
     @NotEmpty
     private List<SaleItemRequestDto> items;
@@ -26,6 +27,8 @@ public class SaleRequestDto {
     public void setBusinessId(Long businessId) { this.businessId = businessId; }
     public Long getCustomerId() { return customerId; }
     public void setCustomerId(Long customerId) { this.customerId = customerId; }
+    public String getCustomerName() { return customerName; }
+    public void setCustomerName(String customerName) { this.customerName = customerName; }
     public List<SaleItemRequestDto> getItems() { return items; }
     public void setItems(List<SaleItemRequestDto> items) { this.items = items; }
     public BigDecimal getDiscount() { return discount; }

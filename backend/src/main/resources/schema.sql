@@ -88,6 +88,7 @@ CREATE TABLE IF NOT EXISTS sales (
     id BIGSERIAL PRIMARY KEY,
     business_id BIGINT NOT NULL REFERENCES businesses(id),
     customer_id BIGINT REFERENCES customers(id),
+    customer_name VARCHAR(255),
     invoice_number VARCHAR(100) NOT NULL,
     subtotal DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     discount DECIMAL(12, 2) DEFAULT 0.00,

@@ -77,6 +77,7 @@ public class SaleService {
         Sale sale = Sale.builder()
                 .businessId(businessId)
                 .customerId(request.getCustomerId())
+                .customerName(request.getCustomerName())
                 .invoiceNumber(invoiceNumber)
                 .discount(request.getDiscount() != null ? request.getDiscount() : BigDecimal.ZERO)
                 .paymentStatus("PAID")
@@ -106,14 +107,9 @@ public class SaleService {
             BigDecimal lineSubtotal = unitPrice.subtract(itemDisc).multiply(qty);
 
             BigDecimal lineTax = BigDecimal.ZERO;
-            if (Boolean.TRUE.equals(business.getGstEnabled()) && product.getGstPercentage() != null && product.getGstPercentage().compareTo(BigDecimal.ZERO) > 0) {
-                lineTax = lineSubtotal.multiply(product.getGstPercentage()).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-            }
-
-            BigDecimal lineTotal = lineSubtotal.add(lineTax);
+            BigDecimal lineTotal = lineSubtotal;
 
             subtotal = subtotal.add(unitPrice.multiply(qty));
-            totalTax = totalTax.add(lineTax);
 
             // Snapshot item (Rule 4)
             SaleItem saleItem = SaleItem.builder()
@@ -123,7 +119,7 @@ public class SaleService {
                     .quantity(itemDto.getQuantity())
                     .unitPrice(unitPrice)
                     .discount(itemDisc)
-                    .tax(lineTax)
+                    .tax(BigDecimal.ZERO)
                     .total(lineTotal)
                     .build();
 
@@ -145,10 +141,10 @@ public class SaleService {
         }
 
         BigDecimal discount = request.getDiscount() != null ? request.getDiscount() : BigDecimal.ZERO;
-        BigDecimal grandTotal = subtotal.subtract(discount).add(totalTax);
+        BigDecimal grandTotal = subtotal.subtract(discount);
 
         sale.setSubtotal(subtotal);
-        sale.setTax(totalTax);
+        sale.setTax(BigDecimal.ZERO);
         sale.setGrandTotal(grandTotal.max(BigDecimal.ZERO));
 
         Sale savedSale = saleRepository.save(sale);

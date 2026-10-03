@@ -49,11 +49,6 @@ export const Header: React.FC<HeaderProps> = ({
               <h1 className="font-bold text-lg text-white leading-none tracking-tight flex items-center gap-1.5">
                 {business.name || 'BillPro'}
               </h1>
-              {business.gstEnabled && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
-                  GST
-                </span>
-              )}
             </div>
             <p className="text-xs text-zinc-400 mt-0.5 truncate max-w-[180px] sm:max-w-xs">
               {business.city ? `${business.city}, ${business.state}` : 'Smart Billing POS'}

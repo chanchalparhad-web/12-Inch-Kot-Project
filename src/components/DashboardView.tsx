@@ -1,12 +1,11 @@
 import React from 'react';
-import type { Product, Sale, Customer, Expense } from '../types/billpro';
-import { IndianRupee, ShoppingBag, Package, Users, Wallet, TrendingUp, Plus, ArrowRight, Printer } from 'lucide-react';
+import type { Product, Sale, Expense } from '../types/billpro';
+import { IndianRupee, ShoppingBag, Package, Receipt, Wallet, TrendingUp, Plus, ArrowRight, Printer } from 'lucide-react';
 import type { NavTab } from './Navigation';
 
 interface DashboardViewProps {
   sales: Sale[];
   products: Product[];
-  customers: Customer[];
   expenses: Expense[];
   onNavigate: (tab: NavTab) => void;
   onOpenAddProduct: () => void;
@@ -16,7 +15,6 @@ interface DashboardViewProps {
 export const DashboardView: React.FC<DashboardViewProps> = ({
   sales,
   products,
-  customers,
   expenses,
   onNavigate,
   onOpenAddProduct,
@@ -123,16 +121,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
 
 
-        {/* Total Customers */}
+        {/* Total Invoices */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 shadow-sm hover:border-zinc-700 transition">
           <div className="flex items-center justify-between text-zinc-400 mb-2">
-            <span className="text-xs font-medium">Customers</span>
+            <span className="text-xs font-medium">Total Orders</span>
             <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400">
-              <Users className="w-4 h-4" />
+              <Receipt className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-xl sm:text-2xl font-extrabold text-white">{customers.length}</p>
-          <p className="text-[11px] text-zinc-400 mt-1">Saved customer profiles</p>
+          <p className="text-xl sm:text-2xl font-extrabold text-white">{sales.length}</p>
+          <p className="text-[11px] text-zinc-400 mt-1">All-time generated bills</p>
         </div>
 
         {/* Today's Expenses */}
@@ -210,15 +208,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </button>
 
         <button
-          onClick={() => onNavigate('customers')}
+          onClick={() => onNavigate('sales')}
           className="flex items-center gap-3 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-yellow-500/50 hover:bg-zinc-800/80 transition text-left group"
         >
           <div className="p-2.5 rounded-xl bg-purple-500/20 text-purple-400 group-hover:scale-110 transition-transform">
-            <Users className="w-5 h-5" />
+            <Receipt className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-xs font-bold text-white">Customers</p>
-            <p className="text-[10px] text-zinc-400">Profiles &amp; ledger</p>
+            <p className="text-xs font-bold text-white">Sales History</p>
+            <p className="text-[10px] text-zinc-400">Past orders &amp; print</p>
           </div>
         </button>
       </div>
@@ -258,7 +256,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {sales.slice(0, 5).map((sale) => (
                   <tr key={sale.id} className="hover:bg-zinc-800/40 transition">
                     <td className="py-3 font-semibold text-yellow-400">{sale.invoiceNumber}</td>
-                    <td className="py-3">{sale.customerName || 'Walk-in'}</td>
+                    <td className="py-3">{sale.customerName || '-'}</td>
                     <td className="py-3">
                       <span className="px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 text-[10px] font-medium border border-zinc-700">
                         {sale.paymentMethod}

@@ -12,6 +12,20 @@ dist
 dist-ssr
 *.local
 
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+
+# Java & Maven
+backend/target/
+target/
+*.class
+*.jar
+*.war
+*.nar
+*.ear
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
