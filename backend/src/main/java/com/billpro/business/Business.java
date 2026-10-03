@@ -26,11 +26,6 @@ public class Business {
     private String state;
     private String pincode;
 
-    @Column(name = "gst_enabled")
-    private Boolean gstEnabled = true;
-
-    private String gstin;
-
     @Column(name = "invoice_prefix")
     private String invoicePrefix = "INV";
 
@@ -42,7 +37,7 @@ public class Business {
 
     public Business() {}
 
-    public Business(Long id, String name, String ownerName, String mobile, String email, String address, String city, String state, String pincode, Boolean gstEnabled, String gstin, String invoicePrefix) {
+    public Business(Long id, String name, String ownerName, String mobile, String email, String address, String city, String state, String pincode, String invoicePrefix) {
         this.id = id;
         this.name = name;
         this.ownerName = ownerName;
@@ -52,8 +47,6 @@ public class Business {
         this.city = city;
         this.state = state;
         this.pincode = pincode;
-        this.gstEnabled = gstEnabled != null ? gstEnabled : true;
-        this.gstin = gstin;
         this.invoicePrefix = invoicePrefix != null ? invoicePrefix : "INV";
     }
 
@@ -71,8 +64,6 @@ public class Business {
         private String city;
         private String state;
         private String pincode;
-        private Boolean gstEnabled = true;
-        private String gstin;
         private String invoicePrefix = "INV";
 
         public BusinessBuilder id(Long id) { this.id = id; return this; }
@@ -84,12 +75,10 @@ public class Business {
         public BusinessBuilder city(String city) { this.city = city; return this; }
         public BusinessBuilder state(String state) { this.state = state; return this; }
         public BusinessBuilder pincode(String pincode) { this.pincode = pincode; return this; }
-        public BusinessBuilder gstEnabled(Boolean gstEnabled) { this.gstEnabled = gstEnabled; return this; }
-        public BusinessBuilder gstin(String gstin) { this.gstin = gstin; return this; }
         public BusinessBuilder invoicePrefix(String invoicePrefix) { this.invoicePrefix = invoicePrefix; return this; }
 
         public Business build() {
-            return new Business(id, name, ownerName, mobile, email, address, city, state, pincode, gstEnabled, gstin, invoicePrefix);
+            return new Business(id, name, ownerName, mobile, email, address, city, state, pincode, invoicePrefix);
         }
     }
 
@@ -116,10 +105,6 @@ public class Business {
     public void setState(String state) { this.state = state; }
     public String getPincode() { return pincode; }
     public void setPincode(String pincode) { this.pincode = pincode; }
-    public Boolean getGstEnabled() { return gstEnabled; }
-    public void setGstEnabled(Boolean gstEnabled) { this.gstEnabled = gstEnabled; }
-    public String getGstin() { return gstin; }
-    public void setGstin(String gstin) { this.gstin = gstin; }
     public String getInvoicePrefix() { return invoicePrefix; }
     public void setInvoicePrefix(String invoicePrefix) { this.invoicePrefix = invoicePrefix; }
     public LocalDateTime getCreatedAt() { return createdAt; }

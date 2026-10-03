@@ -48,7 +48,6 @@ public class AuthService {
                 .ownerName(registerRequest.getName())
                 .mobile(registerRequest.getMobile())
                 .email(registerRequest.getEmail())
-                .gstEnabled(true)
                 .invoicePrefix("INV")
                 .build();
         business = businessRepository.save(business);

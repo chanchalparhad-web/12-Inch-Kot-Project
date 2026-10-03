@@ -30,9 +30,6 @@ public class Product {
     @Column(name = "selling_price", precision = 12, scale = 2, nullable = false)
     private BigDecimal sellingPrice = BigDecimal.ZERO;
 
-    @Column(name = "gst_percentage", precision = 5, scale = 2)
-    private BigDecimal gstPercentage = BigDecimal.ZERO;
-
     @Column(length = 50)
     private String unit = "pcs";
 
@@ -50,7 +47,7 @@ public class Product {
 
     public Product() {}
 
-    public Product(Long id, Long businessId, Long categoryId, String name, String sku, String barcode, BigDecimal purchasePrice, BigDecimal sellingPrice, BigDecimal gstPercentage, String unit, Integer lowStockThreshold, Boolean active) {
+    public Product(Long id, Long businessId, Long categoryId, String name, String sku, String barcode, BigDecimal purchasePrice, BigDecimal sellingPrice, String unit, Integer lowStockThreshold, Boolean active) {
         this.id = id;
         this.businessId = businessId;
         this.categoryId = categoryId;
@@ -59,7 +56,6 @@ public class Product {
         this.barcode = barcode;
         this.purchasePrice = purchasePrice != null ? purchasePrice : BigDecimal.ZERO;
         this.sellingPrice = sellingPrice != null ? sellingPrice : BigDecimal.ZERO;
-        this.gstPercentage = gstPercentage != null ? gstPercentage : BigDecimal.ZERO;
         this.unit = unit != null ? unit : "pcs";
         this.lowStockThreshold = lowStockThreshold != null ? lowStockThreshold : 5;
         this.active = active != null ? active : true;
@@ -78,7 +74,6 @@ public class Product {
         private String barcode;
         private BigDecimal purchasePrice = BigDecimal.ZERO;
         private BigDecimal sellingPrice = BigDecimal.ZERO;
-        private BigDecimal gstPercentage = BigDecimal.ZERO;
         private String unit = "pcs";
         private Integer lowStockThreshold = 5;
         private Boolean active = true;
@@ -91,13 +86,12 @@ public class Product {
         public ProductBuilder barcode(String barcode) { this.barcode = barcode; return this; }
         public ProductBuilder purchasePrice(BigDecimal purchasePrice) { this.purchasePrice = purchasePrice; return this; }
         public ProductBuilder sellingPrice(BigDecimal sellingPrice) { this.sellingPrice = sellingPrice; return this; }
-        public ProductBuilder gstPercentage(BigDecimal gstPercentage) { this.gstPercentage = gstPercentage; return this; }
         public ProductBuilder unit(String unit) { this.unit = unit; return this; }
         public ProductBuilder lowStockThreshold(Integer lowStockThreshold) { this.lowStockThreshold = lowStockThreshold; return this; }
         public ProductBuilder active(Boolean active) { this.active = active; return this; }
 
         public Product build() {
-            return new Product(id, businessId, categoryId, name, sku, barcode, purchasePrice, sellingPrice, gstPercentage, unit, lowStockThreshold, active);
+            return new Product(id, businessId, categoryId, name, sku, barcode, purchasePrice, sellingPrice, unit, lowStockThreshold, active);
         }
     }
 
@@ -122,8 +116,6 @@ public class Product {
     public void setPurchasePrice(BigDecimal purchasePrice) { this.purchasePrice = purchasePrice; }
     public BigDecimal getSellingPrice() { return sellingPrice; }
     public void setSellingPrice(BigDecimal sellingPrice) { this.sellingPrice = sellingPrice; }
-    public BigDecimal getGstPercentage() { return gstPercentage; }
-    public void setGstPercentage(BigDecimal gstPercentage) { this.gstPercentage = gstPercentage; }
     public String getUnit() { return unit; }
     public void setUnit(String unit) { this.unit = unit; }
     public Integer getLowStockThreshold() { return lowStockThreshold; }

@@ -67,7 +67,7 @@ public class SaleService {
     public Sale createSale(SaleRequestDto request) {
         Long businessId = request.getBusinessId() != null ? request.getBusinessId() : 1L;
         Business business = businessRepository.findById(businessId)
-                .orElseGet(() -> Business.builder().id(1L).invoicePrefix("INV").gstEnabled(true).build());
+                .orElseGet(() -> Business.builder().id(1L).invoicePrefix("INV").build());
 
         // Generate unique invoice number (Rule 1)
         long nextNum = saleRepository.countByBusinessId(businessId) + 10043;

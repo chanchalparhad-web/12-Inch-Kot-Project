@@ -11,8 +11,6 @@ CREATE TABLE IF NOT EXISTS businesses (
     city VARCHAR(100),
     state VARCHAR(100),
     pincode VARCHAR(20),
-    gst_enabled BOOLEAN DEFAULT TRUE,
-    gstin VARCHAR(50),
     invoice_prefix VARCHAR(10) DEFAULT 'INV',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -47,7 +45,6 @@ CREATE TABLE IF NOT EXISTS products (
     barcode VARCHAR(100),
     purchase_price DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     selling_price DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
-    gst_percentage DECIMAL(5, 2) DEFAULT 0.00,
     unit VARCHAR(50) DEFAULT 'pcs',
     low_stock_threshold INT DEFAULT 5,
     active BOOLEAN DEFAULT TRUE,

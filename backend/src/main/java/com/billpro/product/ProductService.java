@@ -61,7 +61,6 @@ public class ProductService {
         product.setBarcode(details.getBarcode());
         product.setPurchasePrice(details.getPurchasePrice());
         product.setSellingPrice(details.getSellingPrice());
-        product.setGstPercentage(details.getGstPercentage());
         product.setUnit(details.getUnit());
         product.setLowStockThreshold(details.getLowStockThreshold());
         return productRepository.save(product);

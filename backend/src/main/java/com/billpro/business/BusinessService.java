@@ -29,8 +29,6 @@ public class BusinessService {
         business.setCity(details.getCity());
         business.setState(details.getState());
         business.setPincode(details.getPincode());
-        business.setGstEnabled(details.getGstEnabled());
-        business.setGstin(details.getGstin());
         business.setInvoicePrefix(details.getInvoicePrefix());
         return businessRepository.save(business);
     }
