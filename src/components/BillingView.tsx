@@ -94,10 +94,13 @@ export const BillingView: React.FC<BillingViewProps> = ({
     setCart((prevCart) => prevCart.filter((item) => item.product.id !== productId));
   };
 
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
+
   const clearCart = () => {
     setCart([]);
     setDiscountInput(0);
     setCustomerNameInput('');
+    setMobileCartOpen(false);
   };
 
   // Billing Totals Calculation without GST
@@ -145,25 +148,166 @@ export const BillingView: React.FC<BillingViewProps> = ({
     clearCart();
   };
 
+  // Shared Cart Content Renderer
+  const renderCartContent = (isMobile: boolean = false) => (
+    <div className="flex flex-col justify-between h-full">
+      <div>
+        <div className="flex items-center justify-between border-b border-zinc-800 pb-3 mb-3">
+          <h3 className="font-bold text-white text-base flex items-center gap-2">
+            <ShoppingBag className="w-5 h-5 text-yellow-500" />
+            Current Order ({cart.reduce((a, b) => a + b.quantity, 0)})
+          </h3>
+          {cart.length > 0 && (
+            <button
+              onClick={clearCart}
+              className="text-xs text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1 p-1"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Clear
+            </button>
+          )}
+        </div>
+
+        {/* Customer Name Input (Optional) */}
+        <div className="mb-3 bg-zinc-950/80 border border-zinc-800 rounded-xl p-2.5 flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-yellow-500/10 text-yellow-400 shrink-0">
+            <User className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <input
+              type="text"
+              placeholder="Customer Name (Optional)"
+              value={customerNameInput}
+              onChange={(e) => setCustomerNameInput(e.target.value)}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-yellow-500"
+            />
+          </div>
+          {customerNameInput && (
+            <button
+              type="button"
+              onClick={() => setCustomerNameInput('')}
+              className="text-zinc-400 hover:text-white p-1 text-xs"
+              title="Clear Customer Name"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        {cart.length === 0 ? (
+          <div className="py-10 text-center text-zinc-500 text-xs flex flex-col items-center gap-2">
+            <ShoppingBag className="w-8 h-8 text-zinc-700" />
+            <span>Your cart is empty. Tap menu items to add.</span>
+          </div>
+        ) : (
+          <div className={`space-y-2 overflow-y-auto pr-1 scrollbar-thin ${isMobile ? 'max-h-[42vh]' : 'max-h-[320px]'}`}>
+            {cart.map((item) => (
+              <div
+                key={item.product.id}
+                className="bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 flex items-center justify-between gap-2"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-white truncate">{item.product.name}</p>
+                  <p className="text-[10px] text-zinc-400">
+                    ₹{item.unitPrice.toFixed(0)} × {item.quantity} {item.product.unit}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 rounded-lg p-1">
+                  <button
+                    onClick={() => updateQuantity(item.product.id, -1)}
+                    className="p-1.5 text-zinc-400 hover:text-white rounded active:scale-95"
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="text-xs font-bold text-white px-1 min-w-[16px] text-center">
+                    {item.quantity}
+                  </span>
+                  <button
+                    onClick={() => updateQuantity(item.product.id, 1)}
+                    className="p-1.5 text-zinc-400 hover:text-white rounded active:scale-95"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="text-right min-w-[60px]">
+                  <p className="text-xs font-bold text-yellow-400">₹{item.totalAmount.toFixed(2)}</p>
+                </div>
+
+                <button
+                  onClick={() => removeFromCart(item.product.id)}
+                  className="text-zinc-500 hover:text-rose-400 p-1.5 rounded active:scale-95"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {cart.length > 0 && (
+        <div className="border-t border-zinc-800 pt-3 mt-4 space-y-2">
+          <div className="flex justify-between text-xs text-zinc-400">
+            <span>Subtotal</span>
+            <span>₹{cartSubtotal.toFixed(2)}</span>
+          </div>
+
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-zinc-400 flex items-center gap-1">
+              <Tag className="w-3 h-3 text-yellow-400" /> Order Discount
+            </span>
+            <div className="flex items-center gap-1">
+              <span className="text-zinc-500">₹</span>
+              <input
+                type="number"
+                min="0"
+                value={discountInput || ''}
+                onChange={(e) => setDiscountInput(parseFloat(e.target.value) || 0)}
+                placeholder="0"
+                className="w-16 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-right text-xs text-yellow-400 font-semibold focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center text-base font-extrabold text-white border-t border-zinc-800/80 pt-2">
+            <span>Grand Total</span>
+            <span className="text-xl text-yellow-400">₹{grandTotal.toFixed(2)}</span>
+          </div>
+
+          <button
+            onClick={() => {
+              if (isMobile) setMobileCartOpen(false);
+              setShowPaymentModal(true);
+            }}
+            className="w-full mt-2 py-3.5 px-4 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold text-sm shadow-lg shadow-yellow-500/20 transition active:scale-95 flex items-center justify-center gap-2"
+          >
+            Proceed to Payment (₹{grandTotal.toFixed(2)})
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 pb-20">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 pb-32 sm:pb-24">
       {/* Left Column: Product Selection Grid */}
       <div className="lg:col-span-7 space-y-4">
         {/* Search Bar */}
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3.5 top-3 text-zinc-400" />
+            <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-zinc-400" />
             <input
               type="text"
-              placeholder="Search by Product Name, SKU, or Barcode..."
+              placeholder="Search products by name or SKU..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-yellow-500 transition"
+              className="w-full pl-10 pr-4 py-3 bg-zinc-900 border border-zinc-800 rounded-2xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-yellow-500 transition"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-2.5 text-zinc-400 hover:text-white"
+                className="absolute right-3.5 top-3 text-zinc-400 hover:text-white"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -175,19 +319,19 @@ export const BillingView: React.FC<BillingViewProps> = ({
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           <button
             onClick={() => setSelectedCategory('ALL')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition active:scale-95 ${
               selectedCategory === 'ALL'
                 ? 'bg-yellow-500 text-black shadow-md shadow-yellow-500/20'
                 : 'bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-800'
             }`}
           >
-            All Categories ({activeProducts.length})
+            All Items ({activeProducts.length})
           </button>
           {categories.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition active:scale-95 ${
                 selectedCategory === cat.id
                   ? 'bg-yellow-500 text-black shadow-md shadow-yellow-500/20'
                   : 'bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-800'
@@ -207,14 +351,14 @@ export const BillingView: React.FC<BillingViewProps> = ({
               <button
                 key={product.id}
                 onClick={() => addToCart(product)}
-                className={`flex flex-col justify-between p-3 rounded-2xl border text-left transition relative group ${
+                className={`flex flex-col justify-between p-3.5 rounded-2xl border text-left transition relative group active:scale-[0.98] ${
                   inCart
                     ? 'bg-yellow-500/10 border-yellow-500/50 shadow-lg shadow-yellow-500/10'
                     : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-850'
                 }`}
               >
                 {inCart && (
-                  <span className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-500 text-black rounded-full font-extrabold text-[11px] flex items-center justify-center shadow-md">
+                  <span className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-500 text-black rounded-full font-black text-[11px] flex items-center justify-center shadow-md">
                     {inCart.quantity}
                   </span>
                 )}
@@ -223,19 +367,22 @@ export const BillingView: React.FC<BillingViewProps> = ({
                   <span className="text-[10px] text-zinc-400 uppercase font-semibold">
                     {product.categoryName || 'Item'}
                   </span>
-                  <h4 className="font-bold text-xs text-white leading-snug mt-0.5 line-clamp-2">
+                  <h4 className="font-bold text-xs sm:text-sm text-white leading-snug mt-0.5 line-clamp-2">
                     {product.name}
                   </h4>
-                  <p className="text-[10px] text-zinc-400 mt-1">SKU: {product.sku || 'N/A'}</p>
+                  <p className="text-[10px] text-zinc-500 mt-1">SKU: {product.sku || 'N/A'}</p>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between">
+                <div className="mt-3 flex items-center justify-between pt-2 border-t border-zinc-800/40">
                   <div>
-                    <span className="text-sm font-extrabold text-yellow-400">
+                    <span className="text-sm sm:text-base font-extrabold text-yellow-400">
                       ₹{product.sellingPrice.toFixed(0)}
                     </span>
                     <span className="text-[10px] text-zinc-400"> /{product.unit}</span>
                   </div>
+                  <span className="px-2 py-0.5 rounded-lg bg-zinc-800 text-yellow-400 text-xs font-bold">
+                    + Add
+                  </span>
                 </div>
               </button>
             );
@@ -249,138 +396,59 @@ export const BillingView: React.FC<BillingViewProps> = ({
         )}
       </div>
 
-      {/* Right Column: POS Cart */}
-      <div className="lg:col-span-5 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col justify-between shadow-xl">
-        <div>
-          <div className="flex items-center justify-between border-b border-zinc-800 pb-3 mb-3">
-            <h3 className="font-bold text-white text-base flex items-center gap-2">
-              <ShoppingBag className="w-5 h-5 text-yellow-500" />
-              Current Order ({cart.reduce((a, b) => a + b.quantity, 0)})
-            </h3>
-            {cart.length > 0 && (
-              <button
-                onClick={clearCart}
-                className="text-xs text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1"
-              >
-                <Trash2 className="w-3.5 h-3.5" /> Clear Cart
-              </button>
-            )}
-          </div>
+      {/* Desktop Column: POS Cart */}
+      <div className="hidden lg:flex lg:col-span-5 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex-col justify-between shadow-xl">
+        {renderCartContent(false)}
+      </div>
 
-          <div className="mb-3 bg-zinc-950/80 border border-zinc-800 rounded-xl p-2.5 flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-yellow-500/10 text-yellow-400 shrink-0">
-              <User className="w-4 h-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <input
-                type="text"
-                placeholder="Customer Name (Optional)"
-                value={customerNameInput}
-                onChange={(e) => setCustomerNameInput(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-yellow-500"
-              />
-            </div>
-            {customerNameInput && (
-              <button
-                type="button"
-                onClick={() => setCustomerNameInput('')}
-                className="text-zinc-400 hover:text-white p-1 text-xs"
-                title="Clear Customer Name"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {cart.length === 0 ? (
-            <div className="py-12 text-center text-zinc-500 text-xs flex flex-col items-center gap-2">
-              <ShoppingBag className="w-8 h-8 text-zinc-700" />
-              <span>Your cart is empty. Tap items to add to order.</span>
-            </div>
-          ) : (
-            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin">
-              {cart.map((item) => (
-                <div
-                  key={item.product.id}
-                  className="bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 flex items-center justify-between gap-2"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-white truncate">{item.product.name}</p>
-                    <p className="text-[10px] text-zinc-400">
-                      ₹{item.unitPrice.toFixed(0)} × {item.quantity} {item.product.unit}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 rounded-lg p-1">
-                    <button
-                      onClick={() => updateQuantity(item.product.id, -1)}
-                      className="p-1 text-zinc-400 hover:text-white"
-                    >
-                      <Minus className="w-3 h-3" />
-                    </button>
-                    <span className="text-xs font-bold text-white px-1">{item.quantity}</span>
-                    <button
-                      onClick={() => updateQuantity(item.product.id, 1)}
-                      className="p-1 text-zinc-400 hover:text-white"
-                    >
-                      <Plus className="w-3 h-3" />
-                    </button>
-                  </div>
-
-                  <div className="text-right min-w-[60px]">
-                    <p className="text-xs font-bold text-yellow-400">₹{item.totalAmount.toFixed(2)}</p>
-                  </div>
-
-                  <button
-                    onClick={() => removeFromCart(item.product.id)}
-                    className="text-zinc-500 hover:text-rose-400 p-1"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {cart.length > 0 && (
-          <div className="border-t border-zinc-800 pt-3 mt-4 space-y-2">
-            <div className="flex justify-between text-xs text-zinc-400">
-              <span>Subtotal</span>
-              <span>₹{cartSubtotal.toFixed(2)}</span>
-            </div>
-
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-zinc-400 flex items-center gap-1">
-                <Tag className="w-3 h-3 text-yellow-400" /> Order Discount
-              </span>
-              <div className="flex items-center gap-1">
-                <span className="text-zinc-500">₹</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={discountInput || ''}
-                  onChange={(e) => setDiscountInput(parseFloat(e.target.value) || 0)}
-                  placeholder="0"
-                  className="w-16 bg-zinc-950 border border-zinc-800 rounded px-2 py-0.5 text-right text-xs text-yellow-400 font-semibold focus:outline-none"
-                />
+      {/* Mobile Floating Cart Summary Bar */}
+      {cart.length > 0 && (
+        <div className="lg:hidden fixed bottom-16 left-3 right-3 z-30 animate-in slide-in-from-bottom duration-200">
+          <div className="bg-yellow-500 text-black p-3 rounded-2xl shadow-2xl shadow-yellow-500/40 flex items-center justify-between border border-yellow-400">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-black text-yellow-400 font-black">
+                <ShoppingBag className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-black text-sm leading-tight">
+                  {cart.reduce((a, b) => a + b.quantity, 0)} items • ₹{grandTotal.toFixed(2)}
+                </p>
+                <p className="text-[10px] font-bold text-black/75">
+                  {customerNameInput ? `Customer: ${customerNameInput}` : 'Tap to review & pay'}
+                </p>
               </div>
             </div>
 
-            <div className="flex justify-between items-center text-base font-extrabold text-white border-t border-zinc-800/80 pt-2">
-              <span>Grand Total</span>
-              <span className="text-xl text-yellow-400">₹{grandTotal.toFixed(2)}</span>
-            </div>
-
             <button
-              onClick={() => setShowPaymentModal(true)}
-              className="w-full mt-2 py-3 px-4 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold text-sm shadow-lg shadow-yellow-500/20 transition active:scale-95 flex items-center justify-center gap-2"
+              onClick={() => setMobileCartOpen(true)}
+              className="px-4 py-2 rounded-xl bg-black text-white font-extrabold text-xs hover:bg-zinc-900 transition active:scale-95 shadow-md"
             >
-              Proceed to Payment (₹{grandTotal.toFixed(2)})
+              View Order
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Mobile Cart Slide-up Drawer */}
+      {mobileCartOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm p-0 animate-in fade-in">
+          <div className="w-full bg-zinc-900 border-t border-zinc-800 rounded-t-3xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-300">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3 mb-3">
+              <h3 className="font-black text-lg text-white flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5 text-yellow-500" />
+                Current Order ({cart.reduce((a, b) => a + b.quantity, 0)})
+              </h3>
+              <button
+                onClick={() => setMobileCartOpen(false)}
+                className="p-1.5 rounded-full text-zinc-400 hover:text-white bg-zinc-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            {renderCartContent(true)}
+          </div>
+        </div>
+      )}
 
       {showPaymentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">

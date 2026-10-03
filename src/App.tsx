@@ -11,8 +11,10 @@ import { ReportsView } from './components/ReportsView';
 import { PrinterView } from './components/PrinterView';
 import { BusinessSetupModal } from './components/BusinessSetupModal';
 import { ThermalReceiptModal } from './components/ThermalReceiptModal';
+import { InstallAppModal } from './components/InstallAppModal';
 import { BillProStore } from './services/storage';
 import { BillProApi } from './services/api';
+import { printerDriver } from './services/escposPrinter';
 import type {
   Business,
   User,
@@ -29,6 +31,7 @@ export function App() {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
+  const [showInstallModal, setShowInstallModal] = useState<boolean>(false);
 
   // Domain States loaded from local persistence
   const [business, setBusiness] = useState<Business>(BillProStore.getBusiness());
@@ -105,6 +108,17 @@ export function App() {
   useEffect(() => {
     BillProStore.savePrinter(printer);
   }, [printer]);
+
+  // Listen to physical Bluetooth printer connection / disconnection events
+  useEffect(() => {
+    printerDriver.onStatusChange((status) => {
+      setPrinter((prev) => ({
+        ...prev,
+        status,
+        lastConnectedAt: status === 'CONNECTED' ? new Date().toISOString() : prev.lastConnectedAt,
+      }));
+    });
+  }, []);
 
   // Handler: Complete POS Sale
   const handleCompleteSale = (newSale: Sale) => {
@@ -252,6 +266,7 @@ export function App() {
         isBackendConnected={isBackendConnected}
         onOpenPrinter={() => setActiveTab('printer')}
         onOpenBusinessSetup={() => setShowBusinessSetup(true)}
+        onOpenInstallModal={() => setShowInstallModal(true)}
         onLogout={() => setIsAuthenticated(false)}
       />
 
@@ -337,6 +352,7 @@ export function App() {
       <Navigation
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        onOpenInstallModal={() => setShowInstallModal(true)}
         onLogout={() => setIsAuthenticated(false)}
       />
 
@@ -353,9 +369,15 @@ export function App() {
           sale={selectedSaleForPrint}
           business={business}
           printer={printer}
+          onUpdatePrinter={setPrinter}
           onClose={() => setSelectedSaleForPrint(null)}
         />
       )}
+
+      <InstallAppModal
+        isOpen={showInstallModal}
+        onClose={() => setShowInstallModal(false)}
+      />
     </div>
   );
 }

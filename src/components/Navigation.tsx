@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, ShoppingBag, BarChart3, Menu, Package, Receipt, Printer, Settings, LogOut, X } from 'lucide-react';
+import { Home, ShoppingBag, BarChart3, Menu, Package, Receipt, Printer, Settings, LogOut, X, Download } from 'lucide-react';
 
 export type NavTab = 'home' | 'billing' | 'reports' | 'products' | 'sales' | 'expenses' | 'printer' | 'settings';
 
@@ -7,6 +7,7 @@ interface NavigationProps {
   activeTab: NavTab;
   setActiveTab: (tab: NavTab) => void;
   onLogout: () => void;
+  onOpenInstallModal?: () => void;
   lowStockCount?: number;
 }
 
@@ -14,6 +15,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   activeTab,
   setActiveTab,
   onLogout,
+  onOpenInstallModal,
 }) => {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
 
@@ -24,10 +26,10 @@ export const Navigation: React.FC<NavigationProps> = ({
   ];
 
   const moreItems = [
-    { id: 'products' as NavTab, label: 'Products', icon: Package },
+    { id: 'products' as NavTab, label: 'Products & Menu', icon: Package },
     { id: 'sales' as NavTab, label: 'Sales History', icon: Receipt },
     { id: 'expenses' as NavTab, label: 'Expenses', icon: BarChart3 },
-    { id: 'printer' as NavTab, label: 'Printer (SRS588)', icon: Printer },
+    { id: 'printer' as NavTab, label: 'Bluetooth Printer', icon: Printer },
     { id: 'settings' as NavTab, label: 'Business Setup', icon: Settings },
   ];
 
@@ -121,6 +123,19 @@ export const Navigation: React.FC<NavigationProps> = ({
               })}
             </div>
 
+            {onOpenInstallModal && (
+              <button
+                onClick={() => {
+                  setShowMoreMenu(false);
+                  onOpenInstallModal();
+                }}
+                className="w-full mb-2 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 text-xs font-bold transition"
+              >
+                <Download className="w-4 h-4" />
+                Install 12 Inch Fries App on Phone
+              </button>
+            )}
+
             <button
               onClick={() => {
                 setShowMoreMenu(false);
@@ -129,7 +144,7 @@ export const Navigation: React.FC<NavigationProps> = ({
               className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 text-xs font-semibold transition"
             >
               <LogOut className="w-4 h-4" />
-              Logout from BillPro
+              Logout from 12 Inch Fries
             </button>
           </div>
         </div>

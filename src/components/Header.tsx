@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Business, PrinterDevice, User } from '../types/billpro';
-import { Printer, LogOut, Settings, Database } from 'lucide-react';
+import { Printer, LogOut, Settings, Database, Download } from 'lucide-react';
+import { printerDriver } from '../services/escposPrinter';
 
 interface HeaderProps {
   business: Business;
@@ -9,6 +10,7 @@ interface HeaderProps {
   isBackendConnected?: boolean;
   onOpenPrinter: () => void;
   onOpenBusinessSetup: () => void;
+  onOpenInstallModal?: () => void;
   onLogout: () => void;
 }
 
@@ -19,57 +21,67 @@ export const Header: React.FC<HeaderProps> = ({
   isBackendConnected = true,
   onOpenPrinter,
   onOpenBusinessSetup,
+  onOpenInstallModal,
   onLogout,
 }) => {
+  const isPrinterOnline = printerDriver.isConnected();
+
   const getPrinterBadge = () => {
-    switch (printer.status) {
-      case 'CONNECTED':
-        return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-      case 'CONNECTING':
-        return 'bg-amber-500/20 text-amber-400 border-amber-500/30 animate-pulse';
-      case 'ERROR':
-        return 'bg-rose-500/20 text-rose-400 border-rose-500/30';
-      default:
-        return 'bg-zinc-800 text-zinc-400 border-zinc-700';
+    if (isPrinterOnline) {
+      return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
     }
+    if (printer.status === 'CONNECTING') {
+      return 'bg-amber-500/20 text-amber-400 border-amber-500/30 animate-pulse';
+    }
+    return 'bg-zinc-800 text-zinc-400 border-zinc-700';
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-zinc-950 border-b border-zinc-800/80 px-4 py-3 text-white shadow-lg backdrop-blur-md">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+    <header className="sticky top-0 z-40 bg-zinc-950/95 border-b border-zinc-800/80 px-3 sm:px-4 py-2.5 sm:py-3 text-white shadow-lg backdrop-blur-md">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-3">
         {/* Brand Logo & Business Info */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <img
             src="/logo.png"
             alt="12 Inch Fries Logo"
-            className="w-10 h-10 rounded-xl object-cover border border-yellow-500/30 shadow-md shadow-yellow-500/20"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover border border-yellow-500/30 shadow-md shadow-yellow-500/20 shrink-0"
           />
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-bold text-lg text-white leading-none tracking-tight flex items-center gap-1.5">
-                {business.name || 'BillPro'}
-              </h1>
-            </div>
-            <p className="text-xs text-zinc-400 mt-0.5 truncate max-w-[180px] sm:max-w-xs">
+          <div className="min-w-0">
+            <h1 className="font-extrabold text-base sm:text-lg text-white leading-none tracking-tight truncate">
+              {business.name || '12 Inch Fries'}
+            </h1>
+            <p className="text-[10px] sm:text-xs text-yellow-400/90 font-medium mt-0.5 truncate max-w-[130px] sm:max-w-xs">
               {business.city ? `${business.city}, ${business.state}` : 'Smart Billing POS'}
             </p>
           </div>
         </div>
 
         {/* Right Header Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Install App Button */}
+          {onOpenInstallModal && (
+            <button
+              onClick={onOpenInstallModal}
+              className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-xl bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 transition active:scale-95"
+              title="Install App on Phone"
+            >
+              <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span className="hidden sm:inline">Install App</span>
+            </button>
+          )}
+
           {/* Backend PostgreSQL Connection Status Badge */}
           <div
-            className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border ${
+            className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-1.5 rounded-lg border ${
               isBackendConnected
                 ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
                 : 'bg-zinc-800 text-zinc-500 border-zinc-700'
             }`}
-            title={isBackendConnected ? 'PostgreSQL & Spring Boot Connected' : 'Local Storage Mode'}
+            title={isBackendConnected ? 'PostgreSQL Backend Connected' : 'Local Storage Mode'}
           >
             <Database className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">
-              {isBackendConnected ? 'PostgreSQL Active' : 'Offline Mode'}
+            <span className="hidden lg:inline">
+              {isBackendConnected ? 'PostgreSQL' : 'Offline'}
             </span>
             <span
               className={`w-2 h-2 rounded-full ${
@@ -82,17 +94,23 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onOpenPrinter}
             className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border transition-all hover:brightness-110 active:scale-95 ${getPrinterBadge()}`}
-            title="SHREYANS SRS588 Printer Settings"
+            title="Bluetooth Thermal Printer Status"
           >
-            <Printer className="w-4 h-4" />
-            <span className="hidden sm:inline">{printer.name}</span>
-            <span className="w-2 h-2 rounded-full bg-current" />
+            <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">
+              {isPrinterOnline ? 'Printer Online' : 'Printer Offline'}
+            </span>
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isPrinterOnline ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'
+              }`}
+            />
           </button>
 
           {/* Business Settings Icon */}
           <button
             onClick={onOpenBusinessSetup}
-            className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 transition"
+            className="p-1.5 sm:p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 transition"
             title="Business Setup & Config"
           >
             <Settings className="w-4 h-4" />
