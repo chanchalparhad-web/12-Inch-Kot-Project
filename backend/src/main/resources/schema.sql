@@ -1,8 +1,8 @@
 -- BILLPRO DATABASE SCHEMA v1.0 MVP
--- Engine: PostgreSQL Compatible
+-- Engine: SQLite Compatible
 
 CREATE TABLE IF NOT EXISTS businesses (
-    id BIGSERIAL PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(255) NOT NULL,
     owner_name VARCHAR(255) NOT NULL,
     mobile VARCHAR(20) NOT NULL,
@@ -11,35 +11,35 @@ CREATE TABLE IF NOT EXISTS businesses (
     city VARCHAR(100),
     state VARCHAR(100),
     pincode VARCHAR(20),
-    invoice_prefix VARCHAR(10) DEFAULT 'INV',
+    invoice_prefix VARCHAR(10) DEFAULT 'INF',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS users (
-    id BIGSERIAL PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     mobile VARCHAR(20) NOT NULL,
     password VARCHAR(255) NOT NULL,
     role VARCHAR(50) DEFAULT 'OWNER',
-    business_id BIGINT REFERENCES businesses(id),
+    business_id INTEGER REFERENCES businesses(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS categories (
-    id BIGSERIAL PRIMARY KEY,
-    business_id BIGINT NOT NULL REFERENCES businesses(id),
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    business_id INTEGER NOT NULL REFERENCES businesses(id),
     name VARCHAR(100) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS products (
-    id BIGSERIAL PRIMARY KEY,
-    business_id BIGINT NOT NULL REFERENCES businesses(id),
-    category_id BIGINT REFERENCES categories(id),
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    business_id INTEGER NOT NULL REFERENCES businesses(id),
+    category_id INTEGER REFERENCES categories(id),
     name VARCHAR(255) NOT NULL,
     sku VARCHAR(100),
     barcode VARCHAR(100),
@@ -53,16 +53,16 @@ CREATE TABLE IF NOT EXISTS products (
 );
 
 CREATE TABLE IF NOT EXISTS inventory (
-    id BIGSERIAL PRIMARY KEY,
-    product_id BIGINT NOT NULL UNIQUE REFERENCES products(id) ON DELETE CASCADE,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL UNIQUE REFERENCES products(id) ON DELETE CASCADE,
     current_stock INT NOT NULL DEFAULT 0,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS inventory_transactions (
-    id BIGSERIAL PRIMARY KEY,
-    product_id BIGINT NOT NULL REFERENCES products(id),
-    type VARCHAR(50) NOT NULL, -- NEW_STOCK, SALE_DEDUCTION, DAMAGED, EXPIRED, LOST, CORRECTION
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL REFERENCES products(id),
+    type VARCHAR(50) NOT NULL,
     quantity INT NOT NULL,
     reference_id VARCHAR(100),
     reason TEXT,
@@ -70,8 +70,8 @@ CREATE TABLE IF NOT EXISTS inventory_transactions (
 );
 
 CREATE TABLE IF NOT EXISTS customers (
-    id BIGSERIAL PRIMARY KEY,
-    business_id BIGINT NOT NULL REFERENCES businesses(id),
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    business_id INTEGER NOT NULL REFERENCES businesses(id),
     name VARCHAR(255) NOT NULL,
     mobile VARCHAR(20),
     email VARCHAR(255),
@@ -82,9 +82,9 @@ CREATE TABLE IF NOT EXISTS customers (
 );
 
 CREATE TABLE IF NOT EXISTS sales (
-    id BIGSERIAL PRIMARY KEY,
-    business_id BIGINT NOT NULL REFERENCES businesses(id),
-    customer_id BIGINT REFERENCES customers(id),
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    business_id INTEGER NOT NULL REFERENCES businesses(id),
+    customer_id INTEGER REFERENCES customers(id),
     customer_name VARCHAR(255),
     invoice_number VARCHAR(100) NOT NULL,
     subtotal DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
@@ -96,9 +96,9 @@ CREATE TABLE IF NOT EXISTS sales (
 );
 
 CREATE TABLE IF NOT EXISTS sale_items (
-    id BIGSERIAL PRIMARY KEY,
-    sale_id BIGINT NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
-    product_id BIGINT REFERENCES products(id),
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sale_id INTEGER NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
+    product_id INTEGER REFERENCES products(id),
     product_name VARCHAR(255) NOT NULL,
     quantity INT NOT NULL,
     unit_price DECIMAL(12, 2) NOT NULL,
@@ -108,29 +108,29 @@ CREATE TABLE IF NOT EXISTS sale_items (
 );
 
 CREATE TABLE IF NOT EXISTS payments (
-    id BIGSERIAL PRIMARY KEY,
-    sale_id BIGINT NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
-    method VARCHAR(50) NOT NULL, -- CASH, UPI, CARD, OTHER
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sale_id INTEGER NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
+    method VARCHAR(50) NOT NULL,
     amount DECIMAL(12, 2) NOT NULL,
     status VARCHAR(50) DEFAULT 'COMPLETED',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS expenses (
-    id BIGSERIAL PRIMARY KEY,
-    business_id BIGINT NOT NULL REFERENCES businesses(id),
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    business_id INTEGER NOT NULL REFERENCES businesses(id),
     category VARCHAR(100) NOT NULL,
     description TEXT,
     amount DECIMAL(12, 2) NOT NULL,
     payment_method VARCHAR(50) DEFAULT 'CASH',
-    expense_date DATE DEFAULT CURRENT_DATE,
+    expense_date DATE DEFAULT (date('now')),
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS printers (
-    id BIGSERIAL PRIMARY KEY,
-    business_id BIGINT NOT NULL REFERENCES businesses(id),
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    business_id INTEGER NOT NULL REFERENCES businesses(id),
     name VARCHAR(255) DEFAULT 'SHREYANS SRS588',
     address VARCHAR(255),
     connection_type VARCHAR(50) DEFAULT 'BLUETOOTH',

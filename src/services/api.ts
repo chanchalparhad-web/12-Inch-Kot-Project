@@ -3,11 +3,20 @@ import { BillProStore } from './storage';
 
 const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8080/api';
 
-async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout = 3000): Promise<Response> {
+function getAuthHeaders(): Record<string, string> {
+  const token = BillProStore.getAuthToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout = 5000): Promise<Response> {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
   try {
-    const response = await fetch(url, { ...options, signal: controller.signal });
+    const headers = {
+      ...getAuthHeaders(),
+      ...(options.headers || {}),
+    };
+    const response = await fetch(url, { ...options, headers, signal: controller.signal });
     clearTimeout(id);
     return response;
   } catch (err) {
@@ -17,9 +26,62 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout 
 }
 
 export class BillProApi {
+  // Authentication
+  static async login(emailOrMobile: string, password: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emailOrMobile: emailOrMobile.trim(), password }),
+      }, 7000);
+
+      const data = await res.json();
+      if (res.ok && data.token) {
+        BillProStore.saveAuthToken(data.token);
+        BillProStore.saveAuthUser(data);
+        return { success: true, data };
+      } else {
+        return { success: false, error: data?.message || 'Invalid mobile number or password.' };
+      }
+    } catch (err: any) {
+      console.warn('Backend login connection error, trying offline fallback:', err);
+
+      // --- Offline / Demo Mode Fallback ---
+      // Allow login with default credentials when backend is unreachable
+      const DEFAULT_MOBILE = '9876543210';
+      const DEFAULT_EMAIL = 'ganesh@the12inchfries.com';
+      const DEFAULT_PASSWORD = 'password123';
+
+      const identifierMatch =
+        emailOrMobile.trim() === DEFAULT_MOBILE ||
+        emailOrMobile.trim().toLowerCase() === DEFAULT_EMAIL;
+
+      if (identifierMatch && password === DEFAULT_PASSWORD) {
+        const offlineToken = 'offline-demo-token';
+        const offlineUser = {
+          id: 'u-1',
+          name: 'Ganesh Shinde',
+          email: DEFAULT_EMAIL,
+          mobile: DEFAULT_MOBILE,
+          role: 'OWNER',
+          token: offlineToken,
+        };
+        BillProStore.saveAuthToken(offlineToken);
+        BillProStore.saveAuthUser(offlineUser);
+        return { success: true, data: offlineUser };
+      }
+
+      return { success: false, error: 'Cannot connect to server. Use default credentials for offline mode.' };
+    }
+  }
+
+  static logout(): void {
+    BillProStore.clearAuth();
+  }
+
   static async checkBackendHealth(): Promise<boolean> {
     try {
-      const res = await fetchWithTimeout(`${API_BASE_URL}/products?businessId=1`, { method: 'GET' }, 2000);
+      const res = await fetchWithTimeout(`${API_BASE_URL}/products?businessId=1`, { method: 'GET' }, 2500);
       return res.ok;
     } catch {
       return false;

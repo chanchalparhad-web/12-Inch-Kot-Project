@@ -1,22 +1,29 @@
 import React, { useState } from 'react';
 import type { Sale, Business, PrinterDevice } from '../types/billpro';
-import { Printer, CheckCircle2, AlertTriangle, X, Bluetooth } from 'lucide-react';
-import { generateThermalReceiptText, generateEscPosBuffer, printerDriver } from '../services/escposPrinter';
+import {
+  generateThermalReceiptText,
+  generateEscPosBuffer,
+  printerDriver,
+  printViaBrowserSystem,
+  printViaRawBT,
+  shareReceipt,
+} from '../services/escposPrinter';
+import { Printer, CheckCircle2, AlertTriangle, X, Bluetooth, Share2, Smartphone } from 'lucide-react';
 
 interface ThermalReceiptModalProps {
   sale: Sale;
   business: Business;
   printer: PrinterDevice;
-  onUpdatePrinter?: (p: PrinterDevice) => void;
   onClose: () => void;
+  onUpdatePrinter?: (printer: PrinterDevice) => void;
 }
 
 export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
   sale,
   business,
   printer,
-  onUpdatePrinter,
   onClose,
+  onUpdatePrinter,
 }) => {
   const [isPrinting, setIsPrinting] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -35,6 +42,7 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
         onUpdatePrinter(dev);
       }
       setPrintStatus('IDLE');
+      return dev;
     } catch (err: any) {
       console.error('Connection attempt failed:', err);
       setErrorMessage(err.message || 'Bluetooth connection failed.');
@@ -44,6 +52,7 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
           status: 'DISCONNECTED',
         });
       }
+      return null;
     } finally {
       setIsConnecting(false);
     }
@@ -52,11 +61,17 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
   const handlePrintReceipt = async () => {
     setErrorMessage(null);
 
-    // Strict Connection Check
+    // If not connected, attempt connection right away
     if (!printerDriver.isConnected()) {
-      setPrintStatus('NOT_CONNECTED');
-      setErrorMessage('Printer is NOT turned ON or connected via Bluetooth!');
-      return;
+      setIsConnecting(true);
+      try {
+        const dev = await handleConnectPrinter();
+        if (!dev) return;
+      } catch {
+        return;
+      } finally {
+        setIsConnecting(false);
+      }
     }
 
     setIsPrinting(true);
@@ -108,10 +123,10 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
             />
             <div>
               <span className="font-bold text-white block">
-                {isCurrentlyConnected ? (printerDriver.getConnectedDeviceName() || printer.name) : 'Printer Not Connected'}
+                {isCurrentlyConnected ? (printerDriver.getConnectedDeviceName() || printer.name) : 'Bluetooth Not Connected'}
               </span>
               <span className="text-[10px] text-zinc-400">
-                {isCurrentlyConnected ? 'Ready to print' : 'Turn ON printer & connect Bluetooth'}
+                {isCurrentlyConnected ? 'Direct ESC/POS Ready' : 'Turn ON printer & connect'}
               </span>
             </div>
           </div>
@@ -123,7 +138,7 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
               className="px-3 py-1.5 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold text-[11px] flex items-center gap-1.5 shadow-md shadow-yellow-500/20 transition active:scale-95"
             >
               <Bluetooth className="w-3.5 h-3.5" />
-              {isConnecting ? 'Pairing...' : 'Connect'}
+              {isConnecting ? 'Connecting...' : 'Connect'}
             </button>
           )}
         </div>
@@ -133,7 +148,7 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
           <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-3.5 text-xs text-emerald-400 flex items-start gap-2.5 font-semibold animate-in fade-in">
             <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
             <div>
-              <span className="block font-bold">Bill is sent to printer successfully!</span>
+              <span className="block font-bold">Bill sent to thermal printer successfully!</span>
               <span className="text-[11px] text-emerald-300/80 font-normal">
                 Check paper roll output on your thermal printer.
               </span>
@@ -141,26 +156,17 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
           </div>
         )}
 
-        {(printStatus === 'NOT_CONNECTED' || printStatus === 'FAILED') && (
-          <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-3.5 text-xs text-rose-300 space-y-2 animate-in fade-in">
+        {(printStatus === 'NOT_CONNECTED' || printStatus === 'FAILED' || errorMessage) && (
+          <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-3 text-xs text-rose-300 space-y-2 animate-in fade-in">
             <div className="flex items-start gap-2 font-bold text-rose-400">
               <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
               <div>
-                <span>{errorMessage || 'Printer is NOT on or connected!'}</span>
-                <p className="text-[11px] text-zinc-300 font-normal mt-1">
-                  The bill is already safely saved in sales history. Please turn ON your thermal printer, enable Bluetooth on your phone, and connect.
+                <span>{errorMessage || 'Printer connection required'}</span>
+                <p className="text-[10px] text-zinc-300 font-normal mt-1">
+                  You can connect Bluetooth directly, or use the 1-Click System Print button below.
                 </p>
               </div>
             </div>
-
-            <button
-              onClick={handleConnectPrinter}
-              disabled={isConnecting}
-              className="w-full py-2 px-3 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold text-xs flex items-center justify-center gap-2 transition"
-            >
-              <Bluetooth className="w-3.5 h-3.5" />
-              {isConnecting ? 'Connecting Bluetooth...' : 'Connect Printer & Print Now'}
-            </button>
           </div>
         )}
 
@@ -169,31 +175,62 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
           <pre className="whitespace-pre-wrap font-mono">{receiptText}</pre>
         </div>
 
-        {/* Action Buttons */}
+        {/* Printing Action Buttons */}
         <div className="space-y-2 pt-1">
+          {/* Main Direct Bluetooth Print */}
           <button
             onClick={handlePrintReceipt}
             disabled={isPrinting || isConnecting}
-            className={`w-full py-3.5 px-4 rounded-2xl font-black text-xs shadow-lg transition active:scale-[0.98] flex items-center justify-center gap-2 ${
-              isCurrentlyConnected
-                ? 'bg-yellow-500 hover:bg-yellow-400 text-black shadow-yellow-500/25'
-                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700'
-            }`}
+            className="w-full py-3.5 px-4 rounded-2xl font-black text-xs shadow-lg bg-yellow-500 hover:bg-yellow-400 text-black shadow-yellow-500/25 transition active:scale-[0.98] flex items-center justify-center gap-2"
           >
-            <Printer className="w-4 h-4" />
+            {isCurrentlyConnected ? <Printer className="w-4 h-4" /> : <Bluetooth className="w-4 h-4" />}
             {isPrinting
               ? 'Sending Bill to Printer...'
+              : isConnecting
+              ? 'Connecting Bluetooth...'
               : isCurrentlyConnected
-              ? 'Print Bill to Thermal Printer'
-              : 'Printer Not Connected - Click to Check'}
+              ? 'Print via Bluetooth (ESC/POS)'
+              : 'Connect & Print via Bluetooth'}
           </button>
 
-          <button
-            onClick={onClose}
-            className="w-full py-2.5 px-4 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-zinc-400 hover:text-white font-medium text-xs transition"
-          >
-            Close Receipt
-          </button>
+          {/* Universal System Print & RawBT Grid */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => printViaBrowserSystem(sale, business)}
+              className="py-2.5 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold text-xs flex items-center justify-center gap-1.5 border border-zinc-700 transition"
+              title="Prints using system thermal dialog (Works on any printer: Bluetooth, USB, WiFi)"
+            >
+              <Printer className="w-3.5 h-3.5 text-yellow-400" />
+              System Print
+            </button>
+
+            <button
+              onClick={() => printViaRawBT(sale, business)}
+              className="py-2.5 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold text-xs flex items-center justify-center gap-1.5 border border-zinc-700 transition"
+              title="Print directly on Android to paired Bluetooth printer via RawBT"
+            >
+              <Smartphone className="w-3.5 h-3.5 text-sky-400" />
+              RawBT Android
+            </button>
+          </div>
+
+          {/* WhatsApp Share & Close */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => shareReceipt(sale, business)}
+              className="py-2 px-3 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-emerald-400 border border-zinc-800 font-semibold text-xs flex items-center justify-center gap-1.5 transition"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              Share / WhatsApp
+            </button>
+
+            <button
+              onClick={onClose}
+              className="py-2 px-3 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-zinc-400 hover:text-white font-medium text-xs transition"
+            >
+              Done
+            </button>
+          </div>
         </div>
       </div>
     </div>

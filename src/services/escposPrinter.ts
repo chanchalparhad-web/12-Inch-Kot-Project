@@ -129,6 +129,22 @@ export function generateEscPosBuffer(sale: Sale, business: Business): Uint8Array
   return result;
 }
 
+// Broadest set of BLE Service UUIDs used across Chinese & Indian 58mm/80mm Thermal Printers
+export const COMMON_PRINTER_BLE_SERVICES = [
+  '000018f0-0000-1000-8000-00805f9b34fb', // Standard Printer Service
+  '0000ffe0-0000-1000-8000-00805f9b34fb', // HM-10 / CC2541 - Used in SHREYANS SRS588 & POS-58
+  '0000fee7-0000-1000-8000-00805f9b34fb', // Tencent BLE Thermal POS standard
+  '0000ff00-0000-1000-8000-00805f9b34fb', // Common POS standard
+  '0000fff0-0000-1000-8000-00805f9b34fb', // Common Chinese POS
+  '49535343-fe7d-4ae5-8fa9-9fafd205e455', // ISSC transparent UART (POS58/SRS588)
+  'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Goojprt / PT-210 / Netum
+  '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // Nordic UART Service
+  '0000ae00-0000-1000-8000-00805f9b34fb', // AE serial
+  '0000af30-0000-1000-8000-00805f9b34fb', // AF custom
+  '0000e0ff-0000-1000-8000-00805f9b34fb',
+  '000018f1-0000-1000-8000-00805f9b34fb',
+];
+
 /**
  * Bluetooth ESC/POS Direct Print Manager for 58mm / 80mm Thermal Printers (SHREYANS SRS588, POS-58, etc.)
  */
@@ -139,7 +155,7 @@ export class BluetoothPrinterDriver {
   private onStatusChangeCallback: ((status: 'CONNECTED' | 'DISCONNECTED') => void) | null = null;
 
   isBluetoothSupported(): boolean {
-    return typeof window !== 'undefined' && Boolean((navigator as any).bluetooth);
+    return typeof window !== 'undefined' && Boolean((navigator as any)?.bluetooth);
   }
 
   isConnected(): boolean {
@@ -163,113 +179,50 @@ export class BluetoothPrinterDriver {
   }
 
   /**
+   * Automatically try to reconnect to an already-granted device (e.g. after PWA restart)
+   */
+  async tryAutoReconnect(): Promise<boolean> {
+    if (!this.isBluetoothSupported() || this.isConnected()) return false;
+    try {
+      if (typeof (navigator as any).bluetooth.getDevices === 'function') {
+        const devices = await (navigator as any).bluetooth.getDevices();
+        if (devices && devices.length > 0) {
+          const dev = devices[0];
+          await this.connectGatt(dev);
+          return true;
+        }
+      }
+    } catch (e) {
+      console.warn('Silent auto-reconnect skipped:', e);
+    }
+    return false;
+  }
+
+  /**
    * Request user permission and connect directly to Bluetooth Thermal Printer
    */
   async requestPrinter(): Promise<PrinterDevice> {
     if (!this.isBluetoothSupported()) {
       throw new Error(
-        'Web Bluetooth is not supported on this browser.\n' +
-        '• On Android: Please use Google Chrome.\n' +
-        '• On iOS/iPhone: Please use Bluefy - Web BLE Browser.\n' +
-        '• On PC/Mac: Please use Google Chrome, Edge, or Opera.'
+        'Web Bluetooth is not supported in this browser mode.\n' +
+        '• Android: Use Google Chrome or open directly from Chrome.\n' +
+        '• iOS/iPhone: Use Bluefy or use the "System Thermal Print" button.\n' +
+        '• PC/Mac: Use Google Chrome, Edge, or Opera.'
       );
     }
 
     try {
-      // Common thermal printer BLE service UUIDs
-      const commonPrinterServices = [
-        '000018f0-0000-1000-8000-00805f9b34fb', // Standard Printer Service
-        'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Pos-58
-        '49535343-fe7d-4ae5-8fa9-9fafd205e455', // ISSC transparent UART
-        '0000e0ff-0000-1000-8000-00805f9b34fb',
-        '0000ff00-0000-1000-8000-00805f9b34fb',
-        '0000af30-0000-1000-8000-00805f9b34fb',
-        '0000fff0-0000-1000-8000-00805f9b34fb',
-        '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // Nordic UART Service
-      ];
-
       // Request device from native Bluetooth picker
       const dev = await (navigator as any).bluetooth.requestDevice({
         acceptAllDevices: true,
-        optionalServices: commonPrinterServices,
+        optionalServices: COMMON_PRINTER_BLE_SERVICES,
       });
 
       if (!dev) {
         throw new Error('No Bluetooth printer selected.');
       }
 
-      this.device = dev;
-
-      // Handle spontaneous disconnections (e.g. printer turned off, battery died, out of range)
-      dev.addEventListener('gattserverdisconnected', () => {
-        console.warn('Bluetooth printer disconnected by device/power off.');
-        this.server = null;
-        this.printCharacteristic = null;
-        if (this.onStatusChangeCallback) {
-          this.onStatusChangeCallback('DISCONNECTED');
-        }
-      });
-
-      // Connect to GATT Server
-      const server = await dev.gatt.connect();
-      this.server = server;
-
-      // Search for writable characteristic
-      let writableChar: any = null;
-
-      for (const serviceUuid of commonPrinterServices) {
-        try {
-          const service = await server.getPrimaryService(serviceUuid);
-          const characteristics = await service.getCharacteristics();
-          for (const char of characteristics) {
-            const props = char.properties;
-            if (props.write || props.writeWithoutResponse) {
-              writableChar = char;
-              break;
-            }
-          }
-          if (writableChar) break;
-        } catch {
-          // Continue searching other services
-        }
-      }
-
-      // If specific services didn't return, check any primary service
-      if (!writableChar) {
-        try {
-          const services = await server.getPrimaryServices();
-          for (const service of services) {
-            try {
-              const chars = await service.getCharacteristics();
-              for (const char of chars) {
-                const props = char.properties;
-                if (props.write || props.writeWithoutResponse) {
-                  writableChar = char;
-                  break;
-                }
-              }
-              if (writableChar) break;
-            } catch {
-              // Ignore service characteristic access error
-            }
-          }
-        } catch {
-          // Ignore
-        }
-      }
-
-      if (!writableChar) {
-        throw new Error(
-          'Connected to ' + (dev.name || 'device') + ', but could not find a writable ESC/POS printer characteristic.\n' +
-          'Please ensure the device is a thermal receipt printer.'
-        );
-      }
-
-      this.printCharacteristic = writableChar;
-
-      if (this.onStatusChangeCallback) {
-        this.onStatusChangeCallback('CONNECTED');
-      }
+      await this.connectGatt(dev);
 
       return {
         id: dev.id || `SRS588-BT-${Date.now()}`,
@@ -290,12 +243,64 @@ export class BluetoothPrinterDriver {
         throw new Error('Bluetooth pairing cancelled: No device was selected.');
       }
       if (err.name === 'SecurityError') {
-        throw new Error('Bluetooth permission denied. Please enable Bluetooth permission in your browser/device settings.');
+        throw new Error('Bluetooth permission denied or blocked by browser settings. Please ensure Bluetooth permissions are granted.');
       }
       if (err.name === 'NetworkError') {
         throw new Error('Could not connect to printer. Please ensure your printer is powered ON and within Bluetooth range.');
       }
       throw err;
+    }
+  }
+
+  private async connectGatt(dev: any): Promise<void> {
+    this.device = dev;
+
+    // Handle spontaneous disconnections
+    dev.addEventListener('gattserverdisconnected', () => {
+      console.warn('Bluetooth printer disconnected by device/power off.');
+      this.server = null;
+      this.printCharacteristic = null;
+      if (this.onStatusChangeCallback) {
+        this.onStatusChangeCallback('DISCONNECTED');
+      }
+    });
+
+    const server = await dev.gatt.connect();
+    this.server = server;
+
+    // Search for writable characteristic among common printer services
+    let writableChar: any = null;
+
+    for (const serviceUuid of COMMON_PRINTER_BLE_SERVICES) {
+      try {
+        const service = await server.getPrimaryService(serviceUuid);
+        if (service) {
+          const characteristics = await service.getCharacteristics();
+          for (const char of characteristics) {
+            const props = char.properties;
+            if (props && (props.write || props.writeWithoutResponse)) {
+              writableChar = char;
+              break;
+            }
+          }
+          if (writableChar) break;
+        }
+      } catch {
+        // Continue searching other services
+      }
+    }
+
+    if (!writableChar) {
+      throw new Error(
+        'Connected to ' + (dev.name || 'device') + ', but could not find a writable ESC/POS printer characteristic.\n' +
+        'Please ensure the device is a compatible 58mm/80mm Bluetooth thermal printer.'
+      );
+    }
+
+    this.printCharacteristic = writableChar;
+
+    if (this.onStatusChangeCallback) {
+      this.onStatusChangeCallback('CONNECTED');
     }
   }
 
@@ -321,7 +326,6 @@ export class BluetoothPrinterDriver {
 
   /**
    * Send binary ESC/POS buffer directly to connected printer.
-   * Throws strictly if printer is not ON or not connected.
    */
   async sendRawData(data: Uint8Array): Promise<boolean> {
     if (!this.isConnected()) {
@@ -332,22 +336,23 @@ export class BluetoothPrinterDriver {
     }
 
     try {
-      // Bluetooth LE maximum packet size is typically 20-100 bytes depending on MTU
+      // Chunk size 64-80 bytes with small delay for BLE buffer safety
       const CHUNK_SIZE = 80;
       for (let i = 0; i < data.length; i += CHUNK_SIZE) {
         const chunk = data.slice(i, i + CHUNK_SIZE);
-        if (this.printCharacteristic.writeValueWithResponse) {
-          await this.printCharacteristic.writeValueWithResponse(chunk);
+        if (this.printCharacteristic.writeValueWithoutResponse) {
+          await this.printCharacteristic.writeValueWithoutResponse(chunk);
         } else if (this.printCharacteristic.writeValue) {
           await this.printCharacteristic.writeValue(chunk);
-        } else if (this.printCharacteristic.writeValueWithoutResponse) {
-          await this.printCharacteristic.writeValueWithoutResponse(chunk);
+        } else if (this.printCharacteristic.writeValueWithResponse) {
+          await this.printCharacteristic.writeValueWithResponse(chunk);
         }
+        // Micro-sleep to avoid buffer overflow on older thermal BLE controllers
+        await new Promise((r) => setTimeout(r, 15));
       }
       return true;
     } catch (err: any) {
       console.error('Bluetooth write failed:', err);
-      // Disconnection detected during write
       this.server = null;
       this.printCharacteristic = null;
       if (this.onStatusChangeCallback) {
@@ -361,3 +366,99 @@ export class BluetoothPrinterDriver {
 }
 
 export const printerDriver = new BluetoothPrinterDriver();
+
+/**
+ * Universal System Thermal Print Fallback
+ * Works on ANY device (iPhone, Android, Windows, Mac) with system Bluetooth, USB, or Network printers
+ */
+export function printViaBrowserSystem(sale: Sale, business: Business): void {
+  const receiptText = generateThermalReceiptText(sale, business);
+  const printWindow = window.open('', '_blank', 'width=380,height=600');
+  if (!printWindow) {
+    window.print();
+    return;
+  }
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Receipt #${sale.invoiceNumber}</title>
+        <style>
+          @page {
+            margin: 0;
+            size: 58mm auto;
+          }
+          body {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 11px;
+            line-height: 1.25;
+            width: 48mm;
+            margin: 0 auto;
+            padding: 8px 4px;
+            color: #000;
+            background: #fff;
+          }
+          pre {
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin: 0;
+            font-family: inherit;
+            font-size: inherit;
+          }
+        </style>
+      </head>
+      <body>
+        <pre>${escapeHtml(receiptText)}</pre>
+        <script>
+          window.onload = function() {
+            window.focus();
+            window.print();
+            setTimeout(function() { window.close(); }, 500);
+          };
+        </script>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+}
+
+/**
+ * RawBT Direct Android Intent Fallback
+ * Allows instant 1-click printing on Android to ANY paired Bluetooth/USB printer via RawBT
+ */
+export function printViaRawBT(sale: Sale, business: Business): void {
+  const buffer = generateEscPosBuffer(sale, business);
+  let binary = '';
+  for (let i = 0; i < buffer.byteLength; i++) {
+    binary += String.fromCharCode(buffer[i]);
+  }
+  const base64Data = window.btoa(binary);
+  const rawbtUrl = `intent:base64,${base64Data}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;S.title=BillPro%20Receipt;end;`;
+  window.location.href = rawbtUrl;
+}
+
+/**
+ * Share receipt directly via WhatsApp or System Share
+ */
+export function shareReceipt(sale: Sale, business: Business): void {
+  const text = generateThermalReceiptText(sale, business);
+  if (navigator.share) {
+    navigator.share({
+      title: `${business.name} Bill #${sale.invoiceNumber}`,
+      text: text,
+    }).catch(() => {});
+  } else {
+    const encoded = encodeURIComponent(text);
+    window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
+  }
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}

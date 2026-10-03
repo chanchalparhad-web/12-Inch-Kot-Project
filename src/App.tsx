@@ -24,10 +24,14 @@ import type {
   Expense,
   PrinterDevice,
 } from './types/billpro';
-import { LogIn, Eye, EyeOff } from 'lucide-react';
+import { LogIn, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 export function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(BillProStore.isAuthenticated());
+  const [loginPhoneOrEmail, setLoginPhoneOrEmail] = useState<string>('9876543210');
+  const [loginPassword, setLoginPassword] = useState<string>('password123');
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
@@ -42,7 +46,28 @@ export function App() {
   const [expenses, setExpenses] = useState<Expense[]>(BillProStore.getExpenses());
   const [printer, setPrinter] = useState<PrinterDevice>(BillProStore.getPrinter());
 
-  // Sync with Spring Boot REST API & PostgreSQL DB on Mount
+  // Attempt Bluetooth auto-reconnect on startup (for installed PWA on home screen)
+  useEffect(() => {
+    printerDriver.tryAutoReconnect().then((connected) => {
+      if (connected) {
+        setPrinter((prev) => ({
+          ...prev,
+          name: printerDriver.getConnectedDeviceName() || prev.name,
+          status: 'CONNECTED',
+          lastConnectedAt: new Date().toISOString(),
+        }));
+      }
+    });
+
+    printerDriver.onStatusChange((status) => {
+      setPrinter((prev) => ({
+        ...prev,
+        status: status,
+      }));
+    });
+  }, []);
+
+  // Sync with Spring Boot REST API & SQLite DB on Mount
   useEffect(() => {
     async function syncBackendData() {
       const healthy = await BillProApi.checkBackendHealth();
@@ -187,6 +212,55 @@ export function App() {
     setExpenses((prev) => prev.filter((e) => e.id !== id));
   };
 
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError(null);
+    setIsLoggingIn(true);
+
+    try {
+      const res = await BillProApi.login(loginPhoneOrEmail, loginPassword);
+      if (res.success) {
+        if (res.data) {
+          setUser((prev) => ({
+            ...prev,
+            id: String(res.data.id || prev.id),
+            name: res.data.name || prev.name,
+            email: res.data.email || prev.email,
+            mobile: res.data.mobile || prev.mobile,
+            role: (res.data.role as any) || prev.role,
+          }));
+        }
+        setIsAuthenticated(true);
+        // Refresh domain data from backend
+        try {
+          const [b, prods, cats, exps] = await Promise.all([
+            BillProApi.getBusiness(),
+            BillProApi.getProducts(),
+            BillProApi.getCategories(),
+            BillProApi.getExpenses(),
+          ]);
+          if (b && b.name) setBusiness(b);
+          if (prods && prods.length > 0) setProducts(prods);
+          if (cats && cats.length > 0) setCategories(cats);
+          if (exps && exps.length > 0) setExpenses(exps);
+        } catch {
+          // Keep local cached store
+        }
+      } else {
+        setLoginError(res.error || 'Invalid mobile number or password.');
+      }
+    } catch {
+      setLoginError('Authentication failed. Please verify credentials.');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleLogout = () => {
+    BillProApi.logout();
+    setIsAuthenticated(false);
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-4">
@@ -199,32 +273,48 @@ export function App() {
             />
             <h1 className="text-2xl font-black text-white tracking-tight mt-2">12 Inch Fries</h1>
             <p className="text-xs text-yellow-400 font-semibold tracking-wide">
-              Smart Billing. Better Business.
+              Smart Billing &amp; Thermal Printing POS
             </p>
           </div>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              setIsAuthenticated(true);
-            }}
-            className="space-y-4 text-xs"
-          >
+          {loginError && (
+            <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-rose-300 text-xs flex items-start gap-2.5 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 text-rose-400 mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                <span className="font-bold block text-rose-400">Login Failed</span>
+                <p className="text-[11px] leading-relaxed">{loginError}</p>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-4 text-xs">
             <div>
-              <label className="text-zinc-300 font-semibold block mb-1">Mobile or Email</label>
+              <label className="text-zinc-300 font-semibold block mb-1">
+                Admin Mobile No or Email
+              </label>
               <input
                 type="text"
-                defaultValue="9876543210"
-                className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-yellow-500"
+                value={loginPhoneOrEmail}
+                onChange={(e) => setLoginPhoneOrEmail(e.target.value)}
+                placeholder="e.g. 9876543210"
+                required
+                className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-yellow-500 transition"
               />
+              <span className="text-[10px] text-zinc-500 mt-1 block">
+                Default Admin Phone: <strong className="text-zinc-300">9876543210</strong>
+              </span>
             </div>
+
             <div>
               <label className="text-zinc-300 font-semibold block mb-1">Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  defaultValue="password123"
-                  className="w-full pl-4 pr-11 py-3 bg-zinc-950 border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-yellow-500"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="Enter password"
+                  required
+                  className="w-full pl-4 pr-11 py-3 bg-zinc-950 border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-yellow-500 transition"
                 />
                 <button
                   type="button"
@@ -235,21 +325,27 @@ export function App() {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              <span className="text-[10px] text-zinc-500 mt-1 block">
+                Default Password: <strong className="text-zinc-300">password123</strong>
+              </span>
             </div>
+
             <button
               type="submit"
-              className="w-full py-3.5 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold text-sm shadow-lg shadow-yellow-500/20 transition flex items-center justify-center gap-2"
+              disabled={isLoggingIn}
+              className="w-full py-3.5 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold text-sm shadow-lg shadow-yellow-500/20 transition flex items-center justify-center gap-2 active:scale-95"
             >
-              <LogIn className="w-4 h-4" /> Log In to BillPro
+              <LogIn className="w-4 h-4" />
+              {isLoggingIn ? 'Authenticating...' : 'Log In to BillPro'}
             </button>
           </form>
 
-          <div className="text-center">
+          <div className="pt-2 border-t border-zinc-800 text-center">
             <button
               onClick={() => setIsAuthenticated(true)}
               className="text-xs text-zinc-400 hover:text-yellow-400 font-semibold transition"
             >
-              Skip Login (Demo Mode) →
+              Skip Login (Demo Offline Mode) →
             </button>
           </div>
         </div>
@@ -267,7 +363,7 @@ export function App() {
         onOpenPrinter={() => setActiveTab('printer')}
         onOpenBusinessSetup={() => setShowBusinessSetup(true)}
         onOpenInstallModal={() => setShowInstallModal(true)}
-        onLogout={() => setIsAuthenticated(false)}
+        onLogout={handleLogout}
       />
 
       <main className="max-w-7xl mx-auto px-4 py-6">

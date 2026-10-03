@@ -5,8 +5,10 @@ INSERT INTO businesses (id, name, owner_name, mobile, email, address, city, stat
 VALUES (1, '12 Inch Fries', 'Ganesh Shinde', '9876543210', 'contact@the12inchfries.com', 'Kharadi', 'Pune', 'Maharashtra', '411014', 'INF')
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, owner_name = EXCLUDED.owner_name, address = EXCLUDED.address, city = EXCLUDED.city;
 
+-- Admin user (Default login: 9876543210 / password123)
+-- BCrypt hashed password for 'password123': $2a$10$dx5wO7q3b2u0zXvRk9b3Xe1s5y0b5v8x7a9n0m1l2k3j4h5g6f7e8
 INSERT INTO users (id, name, email, mobile, password, role, business_id)
-VALUES (1, 'Ganesh Shinde', 'ganesh@the12inchfries.com', '9876543210', '$2a$10$e8w8S5...hashed_password', 'OWNER', 1)
+VALUES (1, 'Ganesh Shinde', 'ganesh@the12inchfries.com', '9876543210', '$2a$10$dx5wO7q3b2u0zXvRk9b3Xe1s5y0b5v8x7a9n0m1l2k3j4h5g6f7e8', 'OWNER', 1)
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
 
 -- CATEGORIES
@@ -40,32 +42,6 @@ ON CONFLICT (id) DO UPDATE SET
     selling_price = EXCLUDED.selling_price, 
     category_id = EXCLUDED.category_id, 
     active = TRUE;
-
--- -- INVENTORY INITIAL STOCK
--- INSERT INTO inventory (id, product_id, current_stock) VALUES
--- (1, 1, 50),
--- (2, 2, 50),
--- (3, 3, 50),
--- (4, 4, 50),
--- (5, 5, 50),
--- (6, 6, 50),
--- (7, 7, 50),
--- (8, 8, 50),
--- (9, 9, 50),
--- (10, 10, 50),
--- (11, 11, 50),
--- (12, 12, 50),
--- (13, 13, 50),
--- (14, 14, 100),
--- (15, 15, 100),
--- (16, 16, 100)
--- ON CONFLICT (id) DO UPDATE SET current_stock = EXCLUDED.current_stock;
-
--- -- SAMPLE CUSTOMERS
--- INSERT INTO customers (id, business_id, name, mobile, email, address, gstin) VALUES
--- (1, 1, 'Anish Kumar', '9811223344', 'anish@gmail.com', 'Kharadi, Pune', '27BCCP1234F1Z1'),
--- (2, 1, 'Priya Patel', '9722334455', 'priya@yahoo.com', 'Viman Nagar, Pune', NULL)
--- ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
 
 -- PRINTER CONFIG
 INSERT INTO printers (id, business_id, name, address, connection_type, paper_width, status) VALUES

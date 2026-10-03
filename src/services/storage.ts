@@ -10,6 +10,8 @@ const STORAGE_KEYS = {
   SALES: 'billpro_sales',
   EXPENSES: 'billpro_expenses',
   PRINTER: 'billpro_printer',
+  AUTH_TOKEN: 'billpro_auth_token',
+  AUTH_USER: 'billpro_auth_user',
 };
 
 // Initial Seed Data matching 12 Inch Fries Specifications
@@ -598,5 +600,36 @@ export class BillProStore {
   }
   static saveTransactions(txns: InventoryTransaction[]): void {
     saveToStorage(STORAGE_KEYS.TRANSACTIONS, txns);
+  }
+
+  static getAuthToken(): string | null {
+    return localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+  }
+  static saveAuthToken(token: string | null): void {
+    if (token) {
+      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    }
+  }
+
+  static getAuthUser(): any {
+    return loadFromStorage(STORAGE_KEYS.AUTH_USER, null);
+  }
+  static saveAuthUser(user: any): void {
+    if (user) {
+      saveToStorage(STORAGE_KEYS.AUTH_USER, user);
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
+    }
+  }
+
+  static clearAuth(): void {
+    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
+  }
+
+  static isAuthenticated(): boolean {
+    return Boolean(localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN));
   }
 }

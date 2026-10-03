@@ -1,26 +1,29 @@
 import React, { useState } from 'react';
 import type { PrinterDevice, Business, Sale } from '../types/billpro';
 import {
+  generateThermalReceiptText,
+  generateEscPosBuffer,
+  printerDriver,
+  printViaBrowserSystem,
+  printViaRawBT,
+} from '../services/escposPrinter';
+import {
   Printer,
   Bluetooth,
   CheckCircle2,
-  AlertTriangle,
-  FileText,
-  WifiOff,
-  Smartphone,
+  AlertCircle,
+  Unplug,
   Radio,
+  FileText,
+  Smartphone,
+  Info,
 } from 'lucide-react';
-import {
-  printerDriver,
-  generateThermalReceiptText,
-  generateEscPosBuffer,
-} from '../services/escposPrinter';
 
 interface PrinterViewProps {
   printer: PrinterDevice;
   business: Business;
   latestSale?: Sale;
-  onUpdatePrinter: (p: PrinterDevice) => void;
+  onUpdatePrinter: (printer: PrinterDevice) => void;
 }
 
 export const PrinterView: React.FC<PrinterViewProps> = ({
@@ -34,17 +37,19 @@ export const PrinterView: React.FC<PrinterViewProps> = ({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const isConnected = printerDriver.isConnected();
+  const connectedName = printerDriver.getConnectedDeviceName();
+  const isBleSupported = printerDriver.isBluetoothSupported();
 
-  // Sample Sale for Test Print
-  const sampleSale: Sale = latestSale || {
-    id: 'sample-1',
-    businessId: business.id,
-    invoiceNumber: `${business.invoicePrefix || 'INV'}-00042`,
-    customerName: 'Rahul Sharma',
+  // Sample sale record for test printing
+  const sampleSale: Sale = {
+    id: 'test-sale',
+    businessId: '1',
+    invoiceNumber: 'INF-0099',
+    customerName: 'Table 4 / Dine-In',
     items: [
       {
         id: '1',
-        productId: 'p1',
+        productId: '1',
         productName: 'The Original 12',
         quantity: 2,
         unitPrice: 99,
@@ -53,8 +58,8 @@ export const PrinterView: React.FC<PrinterViewProps> = ({
       },
       {
         id: '2',
-        productId: 'p2',
-        productName: 'Cheese Blast',
+        productId: '5',
+        productName: 'Chipotle Kick',
         quantity: 1,
         unitPrice: 119,
         discount: 0,
@@ -69,7 +74,8 @@ export const PrinterView: React.FC<PrinterViewProps> = ({
     createdAt: new Date().toISOString(),
   };
 
-  const receiptPreviewText = generateThermalReceiptText(sampleSale, business);
+  const saleToPrint = latestSale || sampleSale;
+  const receiptPreviewText = generateThermalReceiptText(saleToPrint, business);
 
   const handleSearchAndConnect = async () => {
     setIsSearching(true);
@@ -112,13 +118,13 @@ export const PrinterView: React.FC<PrinterViewProps> = ({
     if (!printerDriver.isConnected()) {
       setErrorMessage(
         'Printer is NOT turned ON or connected!\n' +
-        'Please turn ON your printer and click "Connect Printer" first.'
+        'Please turn ON your printer and click "Connect Bluetooth Printer" first, or use "Test System Print".'
       );
       return;
     }
 
     try {
-      const buffer = generateEscPosBuffer(sampleSale, business);
+      const buffer = generateEscPosBuffer(saleToPrint, business);
       await printerDriver.sendRawData(buffer);
       setSuccessMessage('Test print bill sent to printer successfully!');
     } catch (err: any) {
@@ -149,106 +155,97 @@ export const PrinterView: React.FC<PrinterViewProps> = ({
                   : 'bg-zinc-950 text-zinc-400 border-zinc-800'
               }`}
             >
-              <Printer className="w-7 h-7" />
+              <Radio className={`w-6 h-6 ${isConnected ? 'animate-pulse' : ''}`} />
             </div>
             <div>
-              <h3 className="font-extrabold text-white text-lg">
-                {isConnected ? (printerDriver.getConnectedDeviceName() || printer.name) : 'No Printer Connected'}
-              </h3>
-              <p className="text-xs text-zinc-400 flex items-center gap-1.5 mt-0.5">
-                <Radio className="w-3.5 h-3.5 text-yellow-500" />
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-white text-base">
+                  {isConnected ? (connectedName || printer.name) : 'No Printer Paired'}
+                </span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                    isConnected
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      : 'bg-zinc-800 text-zinc-400'
+                  }`}
+                >
+                  {isConnected ? 'LIVE CONNECTED' : 'DISCONNECTED'}
+                </span>
+              </div>
+              <p className="text-xs text-zinc-400 mt-0.5">
                 58mm Bluetooth ESC/POS Wireless Thermal
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <span
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold border flex items-center gap-2 ${
-                isConnected
-                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                  : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-              }`}
-            >
-              <span
-                className={`w-2.5 h-2.5 rounded-full ${
-                  isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'
-                }`}
-              />
-              {isConnected ? 'PRINTER ONLINE' : 'DISCONNECTED / OFF'}
-            </span>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {isConnected ? (
+              <button
+                onClick={handleDisconnect}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-rose-400 border border-rose-500/20 text-xs font-bold transition flex items-center justify-center gap-2"
+              >
+                <Unplug className="w-4 h-4" /> Disconnect
+              </button>
+            ) : (
+              <button
+                onClick={handleSearchAndConnect}
+                disabled={isSearching}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold text-xs shadow-lg shadow-yellow-500/20 transition active:scale-95 flex items-center justify-center gap-2"
+              >
+                <Bluetooth className="w-4 h-4" />
+                {isSearching ? 'Scanning Bluetooth...' : 'Pair & Connect Printer'}
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Device Information Grid (Only active details when connected) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-          <div className="bg-zinc-950 border border-zinc-800 p-3.5 rounded-2xl">
-            <span className="text-zinc-500 text-[10px] block font-medium">Model</span>
-            <span className="font-bold text-white text-xs sm:text-sm">SHREYANS SRS588</span>
-          </div>
-          <div className="bg-zinc-950 border border-zinc-800 p-3.5 rounded-2xl">
-            <span className="text-zinc-500 text-[10px] block font-medium">Paper Width</span>
-            <span className="font-bold text-white text-xs sm:text-sm">58mm (32 chars)</span>
-          </div>
-          <div className="bg-zinc-950 border border-zinc-800 p-3.5 rounded-2xl">
-            <span className="text-zinc-500 text-[10px] block font-medium">Bluetooth GATT</span>
-            <span className="font-bold text-yellow-400 text-xs sm:text-sm">
-              {isConnected ? 'Active & Bound' : 'Not Connected'}
-            </span>
-          </div>
-          <div className="bg-zinc-950 border border-zinc-800 p-3.5 rounded-2xl">
-            <span className="text-zinc-500 text-[10px] block font-medium">Auto-Print</span>
-            <span className="font-bold text-emerald-400 text-xs sm:text-sm">
-              {printer.autoPrintOnSale ? 'Enabled' : 'Disabled'}
-            </span>
-          </div>
-        </div>
-
-        {/* Status messages */}
-        {errorMessage && (
-          <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2.5 animate-in fade-in">
-            <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-rose-400" />
-            <div>
-              <span className="font-bold block text-rose-400">Connection or Print Warning</span>
-              <p className="text-[11px] whitespace-pre-line mt-0.5">{errorMessage}</p>
-            </div>
-          </div>
-        )}
-
+        {/* Notifications */}
         {successMessage && (
-          <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2.5 animate-in fade-in font-medium">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2.5 font-medium animate-in fade-in">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
             <span>{successMessage}</span>
           </div>
         )}
 
-        {/* Action Controls */}
-        <div className="flex flex-wrap items-center gap-2.5 pt-2">
-          {isConnected ? (
-            <>
-              <button
-                onClick={handleTestPrint}
-                className="px-5 py-3 rounded-2xl bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold text-xs shadow-lg shadow-yellow-500/20 transition active:scale-95 flex items-center gap-2"
-              >
-                <Printer className="w-4 h-4" /> Send Test Bill to Printer
-              </button>
-              <button
-                onClick={handleDisconnect}
-                className="px-4 py-3 rounded-2xl bg-zinc-800 hover:bg-rose-500/20 text-zinc-300 hover:text-rose-400 border border-zinc-700 text-xs font-semibold transition active:scale-95 flex items-center gap-1.5"
-              >
-                <WifiOff className="w-4 h-4" /> Disconnect Printer
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={handleSearchAndConnect}
-              disabled={isSearching}
-              className="px-6 py-3.5 rounded-2xl bg-yellow-500 hover:bg-yellow-400 text-black font-black text-xs sm:text-sm shadow-xl shadow-yellow-500/25 transition active:scale-95 flex items-center gap-2.5"
-            >
-              <Bluetooth className="w-4 h-4 stroke-[2.5]" />
-              {isSearching ? 'Opening Bluetooth Picker...' : 'Connect Bluetooth Printer'}
-            </button>
-          )}
+        {errorMessage && (
+          <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2.5 animate-in fade-in">
+            <AlertCircle className="w-4 h-4 text-rose-400 mt-0.5 shrink-0" />
+            <div className="space-y-1">
+              <span className="font-bold text-rose-400 block">Printer Error:</span>
+              <p className="text-[11px] whitespace-pre-line leading-relaxed">{errorMessage}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Quick Test Printing Actions */}
+        <div className="pt-2 flex flex-wrap items-center gap-3">
+          <button
+            onClick={handleTestPrint}
+            className={`px-5 py-3 rounded-2xl font-black text-xs transition active:scale-95 flex items-center gap-2 ${
+              isConnected
+                ? 'bg-yellow-500 hover:bg-yellow-400 text-black shadow-lg shadow-yellow-500/20'
+                : 'bg-zinc-800 text-zinc-400 cursor-not-allowed'
+            }`}
+          >
+            <Printer className="w-4 h-4" />
+            Test Bluetooth ESC/POS Print
+          </button>
+
+          <button
+            onClick={() => printViaBrowserSystem(sampleSale, business)}
+            className="px-4 py-3 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-xs font-bold transition flex items-center gap-2"
+          >
+            <Printer className="w-4 h-4 text-yellow-400" />
+            Test System Thermal Print
+          </button>
+
+          <button
+            onClick={() => printViaRawBT(sampleSale, business)}
+            className="px-4 py-3 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-xs font-bold transition flex items-center gap-2"
+          >
+            <Smartphone className="w-4 h-4 text-sky-400" />
+            Test RawBT (Android)
+          </button>
 
           <button
             onClick={() =>
@@ -263,21 +260,33 @@ export const PrinterView: React.FC<PrinterViewProps> = ({
                 : 'bg-zinc-950 text-zinc-400 border-zinc-800'
             }`}
           >
-            Auto-Print after checkout: {printer.autoPrintOnSale ? 'ON' : 'OFF'}
+            Auto-Print on checkout: {printer.autoPrintOnSale ? 'ON' : 'OFF'}
           </button>
         </div>
 
-        {/* Phone / Mobile Bluetooth Guide */}
-        <div className="bg-zinc-950/80 border border-zinc-800 rounded-2xl p-4 text-xs space-y-2">
+        {/* Home Screen & Android PWA Bluetooth Guide */}
+        <div className="bg-zinc-950/80 border border-zinc-800 rounded-2xl p-4 text-xs space-y-2.5">
           <div className="flex items-center gap-2 text-yellow-400 font-bold">
-            <Smartphone className="w-4 h-4" />
-            <span>How to connect on your Phone:</span>
+            <Info className="w-4 h-4" />
+            <span>Home Screen &amp; Mobile Bluetooth Printing Guide:</span>
           </div>
-          <ul className="text-zinc-300 text-[11px] space-y-1 list-disc list-inside">
-            <li>Turn <strong>ON</strong> your thermal printer power switch (check green/blue light).</li>
-            <li>Turn <strong>ON</strong> Bluetooth on your Android phone or iPhone.</li>
-            <li>Tap <strong>Connect Bluetooth Printer</strong> above. When the browser prompts permission, select <strong>SRS588 / Thermal Printer</strong> and tap <strong>Pair</strong>.</li>
-            <li>Once connected, the bill will print directly to your physical printer every time!</li>
+          <ul className="text-zinc-300 text-[11px] space-y-1.5 list-disc list-inside">
+            <li>
+              <strong>Browser Status:</strong> Web Bluetooth is{' '}
+              <span className={isBleSupported ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
+                {isBleSupported ? 'Supported on this device' : 'Limited in this browser'}
+              </span>
+              . On Android, Google Chrome is recommended.
+            </li>
+            <li>
+              <strong>Installed PWA on Home Screen:</strong> Ensure Bluetooth and Nearby Devices permissions are enabled for your browser in Android Settings.
+            </li>
+            <li>
+              <strong>Auto-Reconnect:</strong> Once you pair your printer once, the POS remembers it and automatically attempts silent re-connection when you open the app from your home screen.
+            </li>
+            <li>
+              <strong>Zero-Friction Fallback:</strong> If your printer is connected via Bluetooth settings or USB, you can use the <strong>System Thermal Print</strong> or <strong>RawBT</strong> buttons to print bills instantly without BLE pairing!
+            </li>
           </ul>
         </div>
       </div>
@@ -286,7 +295,7 @@ export const PrinterView: React.FC<PrinterViewProps> = ({
       <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-sm space-y-3">
         <h3 className="font-bold text-white text-sm flex items-center gap-2">
           <FileText className="w-4 h-4 text-yellow-500" />
-          58mm Receipt Monospaced Layout Preview
+          58mm Thermal Receipt Preview (Shreyans SRS588 format)
         </h3>
 
         <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 flex justify-center">

@@ -6,25 +6,21 @@ server:
 spring:
   application:
     name: billpro-backend
-  profiles:
-    active: postgres
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/billpro}
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
-    driver-class-name: org.postgresql.Driver
+    url: ${SPRING_DATASOURCE_URL:jdbc:sqlite:data/billpro.db}
+    driver-class-name: org.sqlite.JDBC
   jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
     hibernate:
       ddl-auto: update
     show-sql: false
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
       hibernate:
         format_sql: false
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.community.dialect.SQLiteDialect
   sql:
     init:
-      mode: always
+      mode: never
 
 app:
   jwt:
@@ -34,4 +30,4 @@ app:
 logging:
   level:
     root: INFO
-    com.billpro: DEBUG
+    com.billpro: INFO

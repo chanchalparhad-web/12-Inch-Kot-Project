@@ -8,9 +8,19 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="12 Inch POS" />
+    <meta http-equiv="Permissions-Policy" content="bluetooth=(self), bluetooth-scanning=(self)" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/logo.png" />
     <title>12 Inch Fries POS - Smart Billing & Thermal Printing</title>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch((err) => {
+            console.log('SW registration note:', err);
+          });
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
